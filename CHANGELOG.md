@@ -44,3 +44,10 @@ All notable changes to this project. One entry per deliverable.
   limits, `npm run refresh` + /api/refresh with CRON_SECRET). B7: Provider
   registry with fallback support (EQUITY_PROVIDER='fmp|yahoo'). Full suite
   24/24 tests, lint clean, typecheck clean. Epic B complete.
+- **C1** — App shell: style-guide tokens as CSS custom properties wired
+  into Tailwind 4 `@theme`, next-themes light/dark (class strategy, dark
+  values re-stepped per guide), 220px left rail with icons + active accent
+  bar, 6 routes with calm empty states, persistent not-advice footer.
+  Verified: build clean, all routes 200, both themes screenshot-checked
+  in Chrome. Also cleared lint debt from B3-B7 (2 `any`s, dead code,
+  setState-in-effect) — see CLAUDE.md Lessons Learned.

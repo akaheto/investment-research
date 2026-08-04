@@ -7,7 +7,7 @@
 import { type EquityProvider, ProviderError } from "./types";
 import { YahooEquityProvider } from "./yahoo";
 import { CoinGeckoCryptoProvider } from "./coingecko";
-import { FredMacroProvider } from "./fred";
+import { FredMacroProvider, type MacroProvider } from "./fred";
 
 const equityProviders: Record<string, () => EquityProvider> = {
   yahoo: () => new YahooEquityProvider(),
@@ -19,7 +19,7 @@ const cryptoProviders: Record<string, () => EquityProvider> = {
   // future: binance, bybit, kraken (with API key)
 };
 
-const macroProviders: Record<string, () => any> = {
+const macroProviders: Record<string, () => MacroProvider> = {
   fred: () => new FredMacroProvider(),
   // future: ecb, ons, statscan
 };
@@ -53,7 +53,7 @@ export function getCryptoProvider(): EquityProvider {
   );
 }
 
-export function getMacroProvider(): any {
+export function getMacroProvider(): MacroProvider {
   const list = (process.env.MACRO_PROVIDER ?? "fred").split("|");
   for (const key of list) {
     const factory = macroProviders[key.trim()];

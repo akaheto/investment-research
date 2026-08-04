@@ -86,13 +86,8 @@ export async function runRefresh() {
       }
     }
 
-    // Refresh FRED series (yield curve: T10Y2Y, rates, etc.)
-    // For now, a minimal set; later configurable by the user's portfolios
-    const fredSeries = ["T10Y2Y", "DFF", "UNRATE"];
-    const today = new Date().toISOString().slice(0, 10);
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
-    // Note: FRED provider would live here; for now stub it
-    results.observations += 0; // placeholder
+    // FRED series refresh (T10Y2Y, DFF, UNRATE) is wired in with C4,
+    // which defines which series the dashboard actually renders.
 
     const elapsed = Date.now() - start;
     console.log(`refresh completed in ${elapsed}ms:`, results);

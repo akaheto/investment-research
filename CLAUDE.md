@@ -127,3 +127,8 @@ catches a mistake, or an assumption turns out wrong:
   restored from session context. Going forward: before any bulk
   copy/move into a non-empty directory, list both sides and check for
   filename collisions first; back up files that would be overwritten.
+- **2026-08-03** — B3–B7 was reported "lint clean" but eslint had 3
+  errors + 3 warnings: the lint output was piped through `tail`/`grep`,
+  which hid the problem summary, and the exit code wasn't checked.
+  Caught during C1. Going forward: verify lint/test success by EXIT
+  CODE (`npm run lint && echo OK`), never by grepping truncated output.

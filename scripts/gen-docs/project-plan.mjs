@@ -24,7 +24,7 @@ const epicB = [
 ];
 
 const epicC = [
-  ["C1", "App shell: nav, light/dark theme, style-guide tokens wired into Tailwind", TODO, "Per VISUAL_STYLE_GUIDE.docx"],
+  ["C1", "App shell: nav, light/dark theme, style-guide tokens wired into Tailwind", DONE, "220px rail, 6 routes, tokens as CSS vars → Tailwind 4 @theme; both themes screenshot-verified in Chrome — 2026-08-03"],
   ["C2", "Watchlist: add/remove instruments, live quote table", TODO, ""],
   ["C3", "Instrument detail page: price chart, fundamentals panel, score breakdown", TODO, ""],
   ["C4", "Market overview: indices, yield curve, crypto snapshot", TODO, ""],
@@ -69,6 +69,8 @@ const changelog = [
   ["2026-08-03", "Scope addition (user): Epic G — portfolio assessment & optimization for two Transamerica Retirement accounts, with news/political-event influence explicitly called out in assessments. Holdings via manual entry + CSV (user decision). E3 narrative layer folded into G5."],
   ["2026-08-03", "B1: Drizzle + libSQL database layer — schema v1 (13 tables incl. Epic G), committed SQL migrations, env-driven client (file:local.db ↔ Turso), migration runner, schema tests green (9/9 suite)."],
   ["2026-08-03", "B2: EquityProvider contract + env-driven registry + yahoo-finance2 v4 connector (batch quotes, daily history). Offline suite 17/17; SMOKE=1 live smoke verified against real Yahoo. changePercent normalized to ratio."],
+  ["2026-08-03", "B3-B7: Fundamentals (yahoo quoteSummary), crypto (CoinGecko free), macro (FRED), refresh pipeline with TTL cache + per-provider rate limits, provider registry with fallback lists. npm run refresh + /api/refresh (CRON_SECRET). Epic B complete. (Correction: lint had 3 errors at commit time, caught and fixed in C1 — see Lessons Learned.)"],
+  ["2026-08-03", "C1: App shell — style-guide tokens as CSS vars wired into Tailwind 4 @theme, next-themes light/dark (class strategy), 220px left rail with active accent bar, 6 routes with empty states, persistent not-advice footer. Build clean, all routes 200, both themes screenshot-verified in Chrome. Fixed B3-B7 lint debt."],
 ];
 
 const statusRow = ([id, d, s, n]) => [id, d, { text: s }, n];

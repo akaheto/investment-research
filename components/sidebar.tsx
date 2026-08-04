@@ -43,6 +43,13 @@ const icons: Record<string, ReactNode> = {
       <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" strokeLinecap="round" />
     </svg>
   ),
+  Oracle: (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4">
+      <circle cx="8" cy="8" r="6.5" />
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M8 3.5v1M8 11.5v1M3.5 8h1M11.5 8h1M4.9 4.9l.7.7M10.4 10.4l.7.7M11.1 4.9l-.7.7M5.6 10.4l-.7.7" strokeLinecap="round" />
+    </svg>
+  ),
   Admin: (
     <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4">
       <path d="M2.5 2.5h11v11h-11z" strokeLinecap="round" strokeLinejoin="round" />

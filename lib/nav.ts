@@ -14,8 +14,9 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Watchlist", href: "/watchlist" },
   { label: "Screener", href: "/screener" },
   { label: "Markets", href: "/markets" },
-  { label: "Portfolio", href: "/portfolio" },
   { label: "News", href: "/news" },
+  { label: "Oracle", href: "/oracle" },
+  { label: "Portfolio", href: "/portfolio" },
   { label: "Settings", href: "/settings" },
   { label: "Admin", href: "/admin/analytics" },
 ];

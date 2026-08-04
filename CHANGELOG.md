@@ -24,3 +24,7 @@ All notable changes to this project. One entry per deliverable.
   ENHANCEMENTS; plus this README/CHANGELOG.
 - **A6** — Baseline check clean: `npm run lint` ✓, `npm test` 5/5 ✓,
   `tsc --noEmit` ✓. Stack commands recorded in CLAUDE.md. Epic A complete.
+- **Scope** — Epic G added: Transamerica portfolio assessment &
+  optimization (manual + CSV holdings ingest, within-menu suggestions,
+  event-overlay assessments with cited news influence). FRED API key
+  received and stored in .env; .env.example added.

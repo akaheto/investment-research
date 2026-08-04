@@ -12,6 +12,9 @@ await writeDoc("ENHANCEMENTS.docx", [
 
   h1("Not Yet Implemented"),
   table(["Idea", "Raised", "Notes"], [
+    ["Portfolio assessment & optimization for the user's two Transamerica Retirement accounts", "2026-08-03", "ACCEPTED INTO PLAN (new Epic G): ingest holdings + each plan's fund menu, score held funds and menu alternatives on the foundational criteria, suggest within-menu optimization swaps. User decision: manual entry + CSV import."],
+    ["Aggregator sync for account holdings (Plaid / SnapTrade)", "2026-08-03", "Deferred alternative to manual entry: cost, third-party credential sharing, and spotty Transamerica retirement coverage. Revisit if manual updates become a chore."],
+    ["News/current-events influence in assessments (political + business), explicitly called out", "2026-08-03", "ACCEPTED INTO PLAN: two-layer assessment — deterministic factor scores + an event overlay in which every cited news item states its direction of influence. Pulls the LLM narrative layer (E3) earlier; requires Claude API key."],
     ["Paid data provider upgrade (FMP / Polygon / Tiingo)", "2026-08-03", "Planned-for by design: env-driven provider selection (B7). Trigger: yahoo-finance2 breakage or need for deeper fundamentals/real-time."],
     ["LLM narrative layer (Claude API) — summarize news/filings per holding", "2026-08-03", "Scheduled as Epic E3. Explains only; never alters scores."],
     ["Backtesting engine over persisted factor-score history", "2026-08-03", "factor_scores table is designed to enable this; consider DuckDB for the analytics if data grows."],

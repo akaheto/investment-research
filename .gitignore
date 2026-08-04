@@ -48,3 +48,4 @@ next-env.d.ts
 # macOS / Drive noise
 .DS_Store
 Icon?
+!.env.example

@@ -43,6 +43,11 @@ await writeDoc("TECHNICAL_SPEC.docx", [
     ["macro_series", "FRED series observations", "seriesId, date, value"],
     ["news_items", "Ingested headlines with ticker tags", "id, publishedAt, source, title, url, tickersCsv, dedupeHash"],
     ["provider_cache", "Raw API response cache with TTL", "cacheKey, fetchedAt, ttlSeconds, payloadJson"],
+    ["accounts", "User's accounts (two Transamerica retirement plans to start)", "id, name, institution, taxType (401k/IRA/taxable), createdAt"],
+    ["holdings", "Positions per account, manually entered or CSV-imported", "accountId, planFundId, units, balance, asOf, source (manual|csv)"],
+    ["plan_menu", "The investable fund lineup of each retirement plan", "accountId, planFundId, fundName, assetClassSlot, expenseRatio, active"],
+    ["proxy_map", "Plan fund → nearest public instrument for scoring", "planFundId, instrumentId, mappingNote, confidence"],
+    ["assessments", "Generated portfolio assessments with their evidence", "id, accountId, runAt, deterministicJson, narrativeText, citedEventIdsCsv, modelId"],
   ], { widths: [20, 34, 46] }),
   note("Long/narrow fundamentals and a persisted score history are deliberate: metrics vary by provider, and score history enables later backtesting without schema changes."),
 
@@ -52,6 +57,7 @@ await writeDoc("TECHNICAL_SPEC.docx", [
   bullet([{ text: "Deterministic scores, LLM for narrative only (user decision 2026-08-03): ", bold: true }, { text: "auditability and backtestability beat flexibility; an LLM can misread numbers with confidence." }]),
   bullet([{ text: "Bonds via macro + ETF proxies in v1: ", bold: true }, { text: "individual-bond data is premium-priced and fragmented; the yield curve and bond ETFs carry most of a personal investor's decision weight." }]),
   bullet([{ text: "Crypto scored on its own scale: ", bold: true }, { text: "no earnings → no valuation factor; comparing a crypto score to an equity score would be false precision." }]),
+  bullet([{ text: "Transamerica holdings via manual entry + CSV (user decision 2026-08-03): ", bold: true }, { text: "no public API exists for individuals; aggregators (Plaid/SnapTrade) add cost, third-party credential sharing, and spotty retirement-plan coverage. 401(k) holdings change slowly, so manual burden is low. Aggregator sync stays on the enhancements list." }]),
 
   h1("6. Signal Logic (detailed — kept current with the code, per user instruction)"),
   p([{ text: "Goal: rank instruments by the likelihood that they are attractive investments, using transparent rules a human can audit. Every composite score can be decomposed to the exact metrics, raw values, percentiles, and weights that produced it. Nothing in this section is produced by an LLM.", italics: true }]),
@@ -126,7 +132,13 @@ await writeDoc("TECHNICAL_SPEC.docx", [
   bullet("Prices refresh daily (EOD, free-tier delayed); fundamentals weekly or on-demand; macro series on their release cadence."),
   bullet("Scoring runs after each refresh and is persisted to factor_scores with a runAt timestamp — reruns over the same data give identical results."),
 
-  h2("6.9 What this logic deliberately does NOT do (v1)"),
+  h2("6.9 Portfolio assessment & the event overlay (Epic G)"),
+  p("Assessments of the user's accounts (two Transamerica retirement plans) are two-layer, and the layers are never blended:"),
+  bullet([{ text: "Layer 1 — deterministic: ", bold: true }, { text: "each held fund and each fund on the plan's menu is scored on the foundational criteria (via proxy_map where plan funds lack public tickers — proxy-scored results are labeled). On top: cross-account allocation, holdings overlap, and cost drag (expense-ratio delta × balance). Optimization suggestions are within-menu swaps ranked by score gap in the same asset-class slot, each with full score decomposition." }]),
+  bullet([{ text: "Layer 2 — event overlay: ", bold: true }, { text: "news items (business and political) and calendar events (earnings, Fed, CPI, elections) tagged to holdings/sectors feed a Claude-written narrative. Citation rule: every event the narrative uses must be cited with its direction of influence (headwind / tailwind / watch) and the holding(s) it touches. Uncited claims are not permitted; assessments persist their cited event IDs for audit." }]),
+  bullet([{ text: "Separation rule: ", bold: true }, { text: "the overlay never modifies a factor score, a rank, or a suggestion ordering. It contextualizes Layer 1, and the UI renders the two layers visually distinct." }]),
+
+  h2("6.10 What this logic deliberately does NOT do (v1)"),
   bullet("No backtesting engine yet (logged in ENHANCEMENTS; the persisted score history is designed to make it possible)."),
   bullet("No machine learning; no LLM anywhere in the numbers. The Epic E3 narrative layer summarizes news/filings next to the scores and must not alter them."),
   bullet("No portfolio optimization, position sizing, or tax advice."),
@@ -138,4 +150,6 @@ await writeDoc("TECHNICAL_SPEC.docx", [
   bullet("Factor scores describe historical statistical tendencies; they are research aids, not investment advice, and the UI says so."),
   bullet("Single-user design: no auth in the local app; the deployed app must sit behind Vercel protection (F1 decision point)."),
   bullet("Project directory lives in Google Drive sync — node_modules churn; recommend excluding it from sync."),
+  bullet("Proxy-scored plan funds inherit the proxy's data, not the fund's actual holdings — close for index funds, looser for active CITs; the confidence field and labeling carry this caveat to the UI."),
+  bullet("Manually entered holdings go stale between updates; every portfolio view shows the holdings as-of date and nags past 60 days."),
 ]);

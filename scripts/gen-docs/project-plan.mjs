@@ -41,7 +41,15 @@ const epicD = [
 const epicE = [
   ["E1", "News ingestion (RSS/free feeds) with ticker tagging + dedupe", TODO, ""],
   ["E2", "Events calendar: earnings dates, Fed meetings, CPI releases", TODO, ""],
-  ["E3", "LLM narrative layer (Claude API): summarizes news/filings per holding; explains, never scores", TODO, "Numbers stay deterministic"],
+  ["E3", "LLM narrative layer (Claude API): summarizes news/filings per holding; explains, never scores", TODO, "Moved to G5 (event-overlay assessments) — kept here as cross-reference"],
+];
+
+const epicG = [
+  ["G1", "Accounts & holdings: data model (accounts, holdings, plan_menu, proxy_map) + manual entry and CSV import of Transamerica statements/menus", TODO, "User decision 2026-08-03: manual + CSV, no aggregator (cost/credentials/coverage)"],
+  ["G2", "Proxy mapping + scoring of held funds AND each plan's menu alternatives on the foundational criteria", TODO, "Proxy-scored funds labeled as such"],
+  ["G3", "Portfolio dashboard: allocation across both accounts, overlap, cost drag, per-holding scores", TODO, ""],
+  ["G4", "Within-menu optimization suggestions with full score decomposition", TODO, "Respects each plan's fund menu; research aid, not advice"],
+  ["G5", "Event-overlay assessments (Claude API): news (business + political) and calendar events cited with explicit direction of influence; stored with event IDs", TODO, "Scores stay deterministic; overlay contextualizes, never alters. Needs ANTHROPIC_API_KEY"],
 ];
 
 const epicF = [
@@ -58,6 +66,7 @@ const changelog = [
   ["2026-08-03", "A4: Vitest + null-safe display formatters; 5 tests passing (incl. unhappy paths); lint clean."],
   ["2026-08-03", "A5: doc set generated via scripts/gen-docs (docx-js): this plan, TECHNICAL_SPEC, VISUAL_STYLE_GUIDE, USER_GUIDE, ENHANCEMENTS + README/CHANGELOG. Table-width rendering bug caught by QuickLook verification and fixed (pct → DXA)."],
   ["2026-08-03", "A6: baseline clean — lint, 5/5 tests, typecheck. Epic A complete."],
+  ["2026-08-03", "Scope addition (user): Epic G — portfolio assessment & optimization for two Transamerica Retirement accounts, with news/political-event influence explicitly called out in assessments. Holdings via manual entry + CSV (user decision). E3 narrative layer folded into G5."],
 ];
 
 const statusRow = ([id, d, s, n]) => [id, d, { text: s }, n];
@@ -94,11 +103,14 @@ await writeDoc("PROJECT_PLAN.docx", [
   table(["#", "Deliverable", "Status", "Notes"], epicD.map(statusRow), { widths: [6, 54, 8, 32] }),
   h3("Epic E — News, Events & Narrative"),
   table(["#", "Deliverable", "Status", "Notes"], epicE.map(statusRow), { widths: [6, 54, 8, 32] }),
-  h3("Epic F — Deployment, QA & Hardening"),
+  h3("Epic G — Portfolio Assessment & Optimization (Transamerica accounts)"),
+  table(["#", "Deliverable", "Status", "Notes"], epicG.map(statusRow), { widths: [6, 54, 8, 32] }),
+  h3("Epic F — Deployment, QA & Hardening (runs last)"),
   table(["#", "Deliverable", "Status", "Notes"], epicF.map(statusRow), { widths: [6, 54, 8, 32] }),
 
   h1("4. Open Questions / Assumptions"),
-  bullet("FRED requires a free API key — needed from the user before B5."),
+  bullet("FRED API key: received from user 2026-08-03, stored in .env (gitignored). B5 unblocked."),
+  bullet("Transamerica plan fund menus: user will provide each plan's fund lineup (and holdings) via manual entry/CSV when G1 lands."),
   bullet("yahoo-finance2 is an unofficial API: acceptable for personal use; a paid provider (e.g. Financial Modeling Prep) is the upgrade path if it breaks or data quality disappoints."),
   bullet("Project lives in a Google Drive-synced folder; node_modules causes sync churn. Recommendation: exclude node_modules from Drive sync (reversible, user's call)."),
 

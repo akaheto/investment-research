@@ -7,7 +7,7 @@
 
 import { db } from "@/db/client";
 import { instruments, watchlist, pricesDaily, factorScores } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 
 export interface WatchlistQuote {
   id: number;
@@ -39,66 +39,79 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
     .from(watchlist)
     .innerJoin(instruments, eq(watchlist.instrumentId, instruments.id));
 
-  const results: WatchlistQuote[] = [];
+  if (watchlistItems.length === 0) {
+    return [];
+  }
 
-  for (const item of watchlistItems) {
-    // Get latest price
-    const latestPrice = await db
-      .select({
-        close: pricesDaily.close,
-        asOf: pricesDaily.date,
-      })
-      .from(pricesDaily)
-      .where(eq(pricesDaily.instrumentId, item.id))
-      .orderBy(desc(pricesDaily.date))
-      .limit(1);
+  const instrumentIds = watchlistItems.map((w) => w.id);
 
-    // Get latest factor scores
-    const scores = await db
-      .select()
-      .from(factorScores)
-      .where(eq(factorScores.instrumentId, item.id))
-      .orderBy(desc(factorScores.runAt))
-      .limit(5);
+  // Batch load the latest prices for all instruments
+  const allPrices = await db
+    .select({
+      instrumentId: pricesDaily.instrumentId,
+      close: pricesDaily.close,
+      date: pricesDaily.date,
+    })
+    .from(pricesDaily)
+    .where(inArray(pricesDaily.instrumentId, instrumentIds))
+    .orderBy(desc(pricesDaily.date));
 
-    const scoresByFactor: Record<string, number> = {};
-    for (const score of scores) {
-      if (!scoresByFactor[score.factor]) {
-        scoresByFactor[score.factor] = score.percentile;
-      }
+  // Group by instrument and get latest 2 prices per instrument
+  const pricesByInstrument: Record<number, typeof allPrices> = {};
+  for (const price of allPrices) {
+    if (!pricesByInstrument[price.instrumentId]) {
+      pricesByInstrument[price.instrumentId] = [];
     }
+    if (pricesByInstrument[price.instrumentId].length < 2) {
+      pricesByInstrument[price.instrumentId].push(price);
+    }
+  }
 
-    if (latestPrice.length > 0) {
-      // Get previous price for change calculation
-      const prevPrice = await db
-        .select({ close: pricesDaily.close })
-        .from(pricesDaily)
-        .where(eq(pricesDaily.instrumentId, item.id))
-        .orderBy(desc(pricesDaily.date))
-        .limit(2);
+  // Batch load all factor scores
+  const allScores = await db
+    .select()
+    .from(factorScores)
+    .where(inArray(factorScores.instrumentId, instrumentIds))
+    .orderBy(desc(factorScores.runAt));
 
-      const current = latestPrice[0].close;
-      const previous = prevPrice.length > 1 ? prevPrice[1].close : current;
+  // Group by instrument and get latest scores
+  const scoresByInstrument: Record<number, Record<string, number>> = {};
+  for (const score of allScores) {
+    if (!scoresByInstrument[score.instrumentId]) {
+      scoresByInstrument[score.instrumentId] = {};
+    }
+    if (!scoresByInstrument[score.instrumentId][score.factor]) {
+      scoresByInstrument[score.instrumentId][score.factor] = score.percentile;
+    }
+  }
+
+  // Build results
+  const results: WatchlistQuote[] = watchlistItems.map((item) => {
+    const prices = pricesByInstrument[item.id] || [];
+    const scores = scoresByInstrument[item.id] || {};
+
+    if (prices.length > 0) {
+      const current = prices[0].close;
+      const previous = prices.length > 1 ? prices[1].close : current;
       const change = current - previous;
       const changePercent = previous > 0 ? (change / previous) * 100 : 0;
 
-      results.push({
+      return {
         id: item.id,
         symbol: item.symbol,
         name: item.name,
         price: current,
         change,
         changePercent,
-        asOf: latestPrice[0].asOf,
-        compositeScore: scoresByFactor["composite"],
-        valuation: scoresByFactor["valuation"],
-        growth: scoresByFactor["growth"],
-        quality: scoresByFactor["quality"],
-        momentum: scoresByFactor["momentum"],
-      });
+        asOf: prices[0].date,
+        compositeScore: scores["composite"],
+        valuation: scores["valuation"],
+        growth: scores["growth"],
+        quality: scores["quality"],
+        momentum: scores["momentum"],
+      };
     } else {
-      // No price data yet - show placeholder
-      results.push({
+      return {
         id: item.id,
         symbol: item.symbol,
         name: item.name,
@@ -106,14 +119,14 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
         change: 0,
         changePercent: 0,
         asOf: new Date().toISOString().split('T')[0],
-        compositeScore: scoresByFactor["composite"],
-        valuation: scoresByFactor["valuation"],
-        growth: scoresByFactor["growth"],
-        quality: scoresByFactor["quality"],
-        momentum: scoresByFactor["momentum"],
-      });
+        compositeScore: scores["composite"],
+        valuation: scores["valuation"],
+        growth: scores["growth"],
+        quality: scores["quality"],
+        momentum: scores["momentum"],
+      };
     }
-  }
+  });
 
   return results;
 }

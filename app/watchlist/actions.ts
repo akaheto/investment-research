@@ -26,6 +26,7 @@ export interface WatchlistQuote {
 
 /**
  * Get watchlist with latest quotes.
+ * Returns items with prices if available; items without prices shown with placeholder values.
  */
 export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
   const watchlistItems = await db
@@ -52,6 +53,21 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
       .orderBy(desc(pricesDaily.date))
       .limit(1);
 
+    // Get latest factor scores
+    const scores = await db
+      .select()
+      .from(factorScores)
+      .where(eq(factorScores.instrumentId, item.id))
+      .orderBy(desc(factorScores.runAt))
+      .limit(5);
+
+    const scoresByFactor: Record<string, number> = {};
+    for (const score of scores) {
+      if (!scoresByFactor[score.factor]) {
+        scoresByFactor[score.factor] = score.percentile;
+      }
+    }
+
     if (latestPrice.length > 0) {
       // Get previous price for change calculation
       const prevPrice = await db
@@ -66,20 +82,6 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
       const change = current - previous;
       const changePercent = previous > 0 ? (change / previous) * 100 : 0;
 
-      // Get latest factor scores
-      const scores = await db
-        .select()
-        .from(factorScores)
-        .where(eq(factorScores.instrumentId, item.id))
-        .orderBy(desc(factorScores.runAt));
-
-      const scoresByFactor: Record<string, number> = {};
-      for (const score of scores) {
-        if (!scoresByFactor[score.factor]) {
-          scoresByFactor[score.factor] = score.percentile;
-        }
-      }
-
       results.push({
         id: item.id,
         symbol: item.symbol,
@@ -88,6 +90,22 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
         change,
         changePercent,
         asOf: latestPrice[0].asOf,
+        compositeScore: scoresByFactor["composite"],
+        valuation: scoresByFactor["valuation"],
+        growth: scoresByFactor["growth"],
+        quality: scoresByFactor["quality"],
+        momentum: scoresByFactor["momentum"],
+      });
+    } else {
+      // No price data yet - show placeholder
+      results.push({
+        id: item.id,
+        symbol: item.symbol,
+        name: item.name,
+        price: 0,
+        change: 0,
+        changePercent: 0,
+        asOf: new Date().toISOString().split('T')[0],
         compositeScore: scoresByFactor["composite"],
         valuation: scoresByFactor["valuation"],
         growth: scoresByFactor["growth"],

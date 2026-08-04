@@ -92,6 +92,6 @@ describe("provider registry", () => {
   // Unhappy path: a typo'd env var fails loudly, not silently
   it("rejects an unknown EQUITY_PROVIDER", () => {
     vi.stubEnv("EQUITY_PROVIDER", "bloomberg_terminal");
-    expect(() => getEquityProvider()).toThrow(/Unknown EQUITY_PROVIDER/);
+    expect(() => getEquityProvider()).toThrow(/No known EQUITY_PROVIDER/);
   });
 });

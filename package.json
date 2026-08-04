@@ -10,7 +10,8 @@
     "test": "vitest run",
     "gen:docs": "node scripts/gen-docs/project-plan.mjs && node scripts/gen-docs/technical-spec.mjs && node scripts/gen-docs/style-guide.mjs && node scripts/gen-docs/user-guide.mjs && node scripts/gen-docs/enhancements.mjs",
     "db:migrate": "node db/migrate.mjs",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "refresh": "node scripts/refresh.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

@@ -16,11 +16,11 @@ const epicA = [
 const epicB = [
   ["B1", "Database layer: Drizzle + libSQL, schema v1 (instruments, prices, fundamentals, watchlist), migrations", DONE, "13 tables incl. Epic G; committed SQL migrations; 4 schema tests (2 unhappy paths) — 2026-08-03"],
   ["B2", "Provider interface + equities/ETF connector (yahoo-finance2): quotes + price history", DONE, "EquityProvider contract + registry; offline tests (4 unhappy paths) + live smoke vs real Yahoo — 2026-08-03"],
-  ["B3", "Fundamentals ingestion for stocks/ETFs (valuation, growth, quality metrics)", TODO, ""],
-  ["B4", "Crypto connector (CoinGecko free tier)", TODO, ""],
-  ["B5", "Macro/rates connector (FRED): yields, curve, inflation, unemployment", TODO, "Free API key required (user)"],
-  ["B6", "Refresh pipeline: caching, rate-limit handling, npm run refresh + /api/refresh (Vercel cron ready)", TODO, "CRON_SECRET guard on the route"],
-  ["B7", "Env-driven provider selection/fallback config (free ↔ paid swap without code changes)", TODO, ""],
+  ["B3", "Fundamentals ingestion for stocks/ETFs (valuation, growth, quality metrics)", DONE, "FundamentalsProvider + yahoo quoteSummary adapter (P/E, debt/equity, margins); 3 tests"],
+  ["B4", "Crypto connector (CoinGecko free tier)", DONE, "CoinGeckoCryptoProvider (batch quotes, market charts); free API, no key needed; 2 tests"],
+  ["B5", "Macro/rates connector (FRED): yields, curve, inflation, unemployment", DONE, "FredMacroProvider (series observations, date ranges); FRED_API_KEY required; 2 tests"],
+  ["B6", "Refresh pipeline: caching, rate-limit handling, npm run refresh + /api/refresh (Vercel cron ready)", DONE, "Cache layer (provider_cache table), per-provider rate limits (ms delays), cachedFetch() wrapper, /api/refresh endpoint + CRON_SECRET guard, npm run refresh script"],
+  ["B7", "Env-driven provider selection/fallback config (free ↔ paid swap without code changes)", DONE, "Registry with fallback lists (EQUITY_PROVIDER='fmp|yahoo' tries FMP then Yahoo); getEquityProvider/getCryptoProvider/getMacroProvider factories; 1 test"],
 ];
 
 const epicC = [

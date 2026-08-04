@@ -37,3 +37,10 @@ All notable changes to this project. One entry per deliverable.
   (`EQUITY_PROVIDER`, default yahoo), yahoo-finance2 v4 adapter with
   injectable client. Offline tests 17/17 incl. 4 unhappy paths; `SMOKE=1`
   live smoke verified against real Yahoo (AAPL/VTI quotes, 1mo history).
+- **B3-B7** — Data providers complete. B3: FundamentalsProvider
+  (yahoo adapter, P/E, debt/equity, margins). B4: CoinGeckoCryptoProvider
+  (free tier, batch quotes, history). B5: FredMacroProvider (FRED API,
+  series observations). B6: Refresh pipeline (caching, per-provider rate
+  limits, `npm run refresh` + /api/refresh with CRON_SECRET). B7: Provider
+  registry with fallback support (EQUITY_PROVIDER='fmp|yahoo'). Full suite
+  24/24 tests, lint clean, typecheck clean. Epic B complete.

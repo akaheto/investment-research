@@ -84,7 +84,7 @@ export async function seedFunds() {
  */
 export async function generateAllSuggestions() {
   try {
-    const { generateSuggestionsForAccount, refreshSuggestionsForAccount } = await import("@/app/portfolio/optimization-actions");
+    const { refreshSuggestionsForAccount } = await import("@/app/portfolio/optimization-actions");
 
     // Get all accounts
     const allAccounts = await db.select().from(accounts);

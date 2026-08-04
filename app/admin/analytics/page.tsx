@@ -5,6 +5,8 @@ import { getApiStats, getRecentImports, getRecentEvents } from "@/lib/audit/trac
 import { getCacheStats } from "@/lib/cache/provider-cache";
 import { formatTimeEST } from "@/lib/format-time";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Admin Analytics — API usage, imports, system health, cache status.
  */

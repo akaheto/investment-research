@@ -4,6 +4,8 @@ import { RegimeDial } from "@/components/regime-dial";
 import { EventsWidget } from "@/app/components/events-widget";
 import { getMarketIndices, getYieldCurve, getTopCrypto, getMacroRegime } from "./actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function MarketsPage() {
   const [indices, yieldCurve, crypto, regime] = await Promise.all([
     getMarketIndices(),

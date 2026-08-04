@@ -11,8 +11,8 @@ import { formatTimeEST } from "@/lib/format-time";
  */
 
 export default async function AdminAnalyticsPage() {
-  // Seed Mag 7 stocks on first load (idempotent, skips if already seeded)
-  await seedMag7();
+  // Note: Mag 7 stocks are now manually added to watchlist, so automatic seed is disabled
+  // await seedMag7();
 
   const [apiStats, imports, events, cacheStats] = await Promise.all([
     getApiStats(24),

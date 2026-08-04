@@ -5,21 +5,13 @@ import { triggerManualRefresh } from "./actions";
 
 export function RefreshButton() {
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState("");
 
   const handleRefresh = () => {
-    setMessage("");
     startTransition(async () => {
       try {
-        const result = await triggerManualRefresh();
-        if (result?.ok === true) {
-          setMessage(result.message || "✅ Refresh completed");
-        } else {
-          setMessage(result?.message || "❌ Refresh failed");
-        }
+        await triggerManualRefresh();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        setMessage(`❌ ${msg}`);
+        console.error("Refresh failed:", err);
       }
     });
   };
@@ -33,7 +25,7 @@ export function RefreshButton() {
       >
         {isPending ? "Refreshing..." : "Trigger Manual Refresh"}
       </button>
-      {message && <div className="text-sm text-muted">{message}</div>}
+      {isPending && <div className="text-sm text-muted">✅ Refresh started. Check back in a minute for results.</div>}
     </div>
   );
 }

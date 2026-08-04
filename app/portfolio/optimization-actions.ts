@@ -84,7 +84,8 @@ export async function generateSuggestionsForAccount(
         continue;
       }
 
-      const annualSavings = holding.balance * erDifference;
+      // Convert ER percentage to decimal (e.g., 0.40% → 0.004) for calculation
+      const annualSavings = holding.balance * (erDifference / 100);
 
       // Determine reason
       let reason: "lower_expense_ratio" | "better_performance" | "similar_allocation_lower_cost";

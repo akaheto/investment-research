@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db/client";
-import { fundHoldings, funds, events, assessments } from "@/db/schema";
+import { accounts, fundHoldings, funds, events, assessments } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { Anthropic } from "@anthropic-ai/sdk";
 

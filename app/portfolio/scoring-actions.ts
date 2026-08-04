@@ -149,7 +149,8 @@ export async function findBetterAlternatives(
         // Cost savings per $1M invested annually
         const currentER = current.expenseRatioNet ?? 0.5;
         const erDifference = currentER - alt.expenseRatioNet;
-        const costSavings = erDifference * 10000; // $1M × ER% = dollars
+        // erDifference is in % points (e.g., 0.40 = 0.40%); multiply by 10k to get $/1M
+        const costSavings = erDifference * 10000;
 
         // Performance match: how similar are returns?
         const ytdDiff = Math.abs((alt.ytdPercent || 0) - currentYTD);

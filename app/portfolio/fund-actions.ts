@@ -286,6 +286,7 @@ const TRANSAMERICA_FUNDS: FundData[] = [
  */
 export async function seedTransamericaFunds(): Promise<{ ok: boolean; count?: number; message?: string }> {
   try {
+    const now = new Date().toISOString();
     const asOfDate = "2026-07-31"; // From the fund menu report
 
     let count = 0;

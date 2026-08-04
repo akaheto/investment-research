@@ -115,7 +115,7 @@ catches a mistake, or an assumption turns out wrong:
 
 ## Stack notes
 - Package manager: npm
-- Test command: [fill in once Vitest is set up — A4]
+- Test command: npm test (vitest run)
 - Lint command: npm run lint
 - Dev/run command: npm run dev
 

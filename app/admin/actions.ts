@@ -11,6 +11,8 @@ import { fetchNewsForWatchlist } from "@/app/news/actions";
 import { getCacheStats, clearExpiredCache } from "@/lib/cache/provider-cache";
 
 export async function triggerManualRefresh() {
+  let result = { ok: false, message: "❌ Refresh failed: Unknown error" };
+
   try {
     logAuditEvent({
       eventType: "data_refresh",
@@ -21,14 +23,20 @@ export async function triggerManualRefresh() {
     console.log("🔄 Starting manual refresh...");
 
     // 1. Fetch live prices
-    const prices = await runRefresh();
-    console.log(`✓ Price refresh: ${prices.symbols} symbols, ${prices.observations} observations`);
+    let pricesSymbols = 0;
+    try {
+      const prices = await runRefresh();
+      pricesSymbols = prices.symbols || 0;
+      console.log(`✓ Price refresh: ${pricesSymbols} symbols`);
+    } catch (priceErr) {
+      console.warn("⚠️ Price fetch failed:", priceErr);
+    }
 
     // 2. Compute factor scores
     let scoresCount = 0;
     try {
       const scores = await computeScoresForWatchlist("balanced");
-      scoresCount = scores.count;
+      scoresCount = scores.count || 0;
       console.log(`✓ Scores computed: ${scoresCount} instruments`);
     } catch (scoreErr) {
       console.warn("⚠️ Scores computation failed:", scoreErr);
@@ -44,28 +52,35 @@ export async function triggerManualRefresh() {
       console.warn("⚠️ News fetch failed:", newsErr);
     }
 
+    const message = `✅ Refresh complete: ${pricesSymbols} prices, ${scoresCount} scores, ${newsCount} news items`;
+    result = { ok: true, message };
+    console.log(message);
+
     logAuditEvent({
       eventType: "data_refresh",
       action: "Manual refresh completed",
       status: "success",
-      details: { prices: prices.symbols, scores: scoresCount, news: newsCount },
+      details: { prices: pricesSymbols, scores: scoresCount, news: newsCount },
     });
-
-    const message = `✅ Refresh complete: ${prices.symbols} prices, ${scoresCount} scores, ${newsCount} news items`;
-    console.log(message);
-    return { ok: true, message };
   } catch (error) {
     const errorMsg = String(error);
-    logAuditEvent({
-      eventType: "data_refresh",
-      action: "Manual refresh failed",
-      status: "failed",
-      details: { error: errorMsg },
-    });
-
     console.error("❌ Refresh failed:", error);
-    return { ok: false, message: `❌ Refresh failed: ${errorMsg}` };
+
+    try {
+      logAuditEvent({
+        eventType: "data_refresh",
+        action: "Manual refresh failed",
+        status: "failed",
+        details: { error: errorMsg },
+      });
+    } catch {
+      // Ignore audit logging errors
+    }
+
+    result = { ok: false, message: `❌ Refresh failed: ${errorMsg}` };
   }
+
+  return result;
 }
 
 export async function getCacheStatus() {

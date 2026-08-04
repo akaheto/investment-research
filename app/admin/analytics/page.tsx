@@ -1,6 +1,7 @@
 import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { RefreshButton } from "../refresh-button";
+import { SeedButton } from "../seed-button";
 import { getApiStats, getRecentImports, getRecentEvents } from "@/lib/audit/tracker";
 
 /**
@@ -20,11 +21,17 @@ export default async function AdminAnalyticsPage() {
 
       <div className="mb-6">
         <Card title="System Control" className="col-span-12">
-          <div className="space-y-2">
-            <p className="text-sm text-muted mb-3">
-              Cron job runs daily at 3:00 AM UTC. Trigger manual refresh below:
-            </p>
-            <RefreshButton />
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted mb-2">Seed Mag 7 stocks (AAPL, MSFT, GOOGL, AMZN, TSLA, META, NVDA):</p>
+              <SeedButton />
+            </div>
+            <div className="border-t border-hairline pt-4">
+              <p className="text-sm text-muted mb-2">
+                Cron job runs daily at 3:00 AM UTC. Trigger manual refresh below:
+              </p>
+              <RefreshButton />
+            </div>
           </div>
         </Card>
       </div>

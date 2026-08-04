@@ -118,6 +118,7 @@ catches a mistake, or an assumption turns out wrong:
 - Test command: npm test (vitest run)
 - Lint command: npm run lint
 - Dev/run command: npm run dev
+- Docs regeneration: npm run gen:docs (all .docx; edit scripts/gen-docs/*, never the .docx)
 
 ## Lessons Learned
 - **2026-08-03** — While moving the create-next-app scaffold into the

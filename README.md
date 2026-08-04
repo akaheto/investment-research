@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Investment Research Dashboard
 
-## Getting Started
+A personal, single-user investment-research dashboard: automatically
+refreshed prices, fundamentals, macro data, and news for stocks, ETFs,
+crypto, and bonds — plus transparent, rules-based factor scoring
+(valuation / growth / quality / momentum) to surface candidates worth a
+closer look. Research aid, not investment advice.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Next.js 16** (App Router) · React 19 · TypeScript · Tailwind 4
+- **libSQL + Drizzle** — SQLite file locally, Turso on Vercel
+- **Free-tier data** behind a provider-agnostic connector layer
+  (yahoo-finance2, CoinGecko, FRED, RSS/EDGAR); paid providers swap in
+  via env config
+- **Vitest** + **ESLint**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the dev server |
+| `npm test` | Run the test suite (Vitest) |
+| `npm run lint` | Lint (ESLint) |
+| `npm run gen:docs` | Regenerate all .docx project documents |
+| `npm run build` | Production build |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentation
 
-## Learn More
+Project docs are **generated** Word files — edit the module in
+`scripts/gen-docs/`, run `npm run gen:docs`, never hand-edit the .docx:
 
-To learn more about Next.js, take a look at the following resources:
+- `PROJECT_PLAN.docx` — deliverables, statuses, changelog (living doc)
+- `TECHNICAL_SPEC.docx` — architecture, data model, **detailed signal
+  logic** (kept current with the scoring code, by rule)
+- `VISUAL_STYLE_GUIDE.docx` — validated palette, typography, components
+- `USER_GUIDE.docx` — non-technical guide
+- `ENHANCEMENTS.docx` — idea log (implemented / pending / rejected)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Dev-facing docs stay in the repo: this README, `CHANGELOG.md`, and
+`CLAUDE.md` (working agreement + lessons learned).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project conventions
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- One deliverable at a time; self-verified before "done"; docs updated
+  immediately, not batched — see `CLAUDE.md`.
+- Every feature ships with tests, including at least one unhappy path.
+- Scoring stays deterministic and auditable; the LLM layer (later)
+  explains but never produces the numbers.

@@ -18,15 +18,20 @@ export function AdminPanel() {
   const handleAction = async (label: string, action: () => Promise<{ message?: string; ok?: boolean; error?: string }>) => {
     setLoading(label);
     try {
+      console.log(`🔄 Starting action: ${label}`);
       const result = await action();
+      console.log(`✓ Action completed: ${label}`, result);
+      const message = result.message || (result.ok ? "Success" : "Failed");
       setResults((prev) => ({
         ...prev,
-        [label]: result.message || (result.ok ? "Success" : "Failed"),
+        [label]: message,
       }));
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Action failed: ${label}`, error);
       setResults((prev) => ({
         ...prev,
-        [label]: `Error: ${String(error)}`,
+        [label]: `Error: ${errorMsg}`,
       }));
     } finally {
       setLoading(null);

@@ -34,6 +34,8 @@ export async function generateSuggestionsForAccount(
   message?: string;
 }> {
   try {
+    console.log(`[G2/G3] Generating suggestions for account ${accountId}, asOf: ${asOfDate}`);
+
     // Get account's holdings
     const holdings = await db
       .select({
@@ -44,6 +46,8 @@ export async function generateSuggestionsForAccount(
       })
       .from(fundHoldings)
       .where(and(eq(fundHoldings.accountId, accountId), eq(fundHoldings.asOf, asOfDate)));
+
+    console.log(`[G2/G3] Found ${holdings.length} holdings for account ${accountId}`);
 
     if (holdings.length === 0) {
       return { ok: true, suggestions: [], totalAnnualSavings: 0, message: "No holdings found" };
@@ -85,7 +89,9 @@ export async function generateSuggestionsForAccount(
       }
 
       // Convert ER percentage to decimal (e.g., 0.40% → 0.004) for calculation
+      // This is CRITICAL: erDifference is in percentage points, must divide by 100
       const annualSavings = holding.balance * (erDifference / 100);
+      console.log(`[G2/G3] ${currentFund.fundName} → ${suggestedFund.fundName}: $${holding.balance} × (${erDifference}% / 100) = $${annualSavings.toFixed(2)}/yr`);
 
       // Determine reason
       let reason: "lower_expense_ratio" | "better_performance" | "similar_allocation_lower_cost";

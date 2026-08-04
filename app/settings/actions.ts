@@ -84,10 +84,11 @@ export async function seedFunds() {
  */
 export async function generateAllSuggestions() {
   try {
-    const { generateSuggestionsForAccount } = await import("@/app/portfolio/optimization-actions");
+    const { generateSuggestionsForAccount, refreshSuggestionsForAccount } = await import("@/app/portfolio/optimization-actions");
 
     // Get all accounts
     const allAccounts = await db.select().from(accounts);
+    console.log(`📊 Found ${allAccounts.length} accounts`);
 
     if (allAccounts.length === 0) {
       return { ok: false, message: "No accounts found" };
@@ -97,24 +98,41 @@ export async function generateAllSuggestions() {
     let totalSavings = 0;
 
     for (const account of allAccounts) {
-      const result = await generateSuggestionsForAccount(account.id);
-      if (result.ok && result.suggestions) {
-        results.push({
-          account: account.name,
-          suggestions: result.suggestions.length,
-          savings: result.totalAnnualSavings || 0,
-        });
-        totalSavings += result.totalAnnualSavings || 0;
+      try {
+        console.log(`  Processing account: ${account.name} (ID: ${account.id})`);
+        // Use refreshSuggestionsForAccount to clear old and generate new
+        const result = await refreshSuggestionsForAccount(account.id);
+        console.log(`  Result for ${account.name}:`, result);
+
+        if (result.ok && result.suggestions) {
+          results.push({
+            account: account.name,
+            suggestions: result.suggestions.length,
+            savings: result.totalAnnualSavings || 0,
+          });
+          totalSavings += result.totalAnnualSavings || 0;
+          console.log(`  ✓ Generated ${result.suggestions.length} suggestions, savings: $${result.totalAnnualSavings?.toFixed(2)}`);
+        } else {
+          console.log(`  ⚠️ No suggestions for ${account.name}: ${result.message}`);
+        }
+      } catch (accountError) {
+        console.error(`  ❌ Failed to process ${account.name}:`, accountError);
       }
     }
 
+    const message = results.length === 0
+      ? "No optimization suggestions generated (no holdings found or all are best-in-class)"
+      : `✅ Generated suggestions for ${results.length} account(s). Total potential savings: $${totalSavings.toFixed(2)}`;
+
     return {
-      ok: true,
-      message: `Generated suggestions for ${results.length} account(s). Total potential savings: $${totalSavings.toFixed(2)}`,
+      ok: results.length > 0,
+      message,
       results,
     };
   } catch (error) {
-    return { ok: false, message: String(error) };
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("❌ generateAllSuggestions failed:", error);
+    return { ok: false, message: `Failed to generate suggestions: ${errorMsg}` };
   }
 }
 

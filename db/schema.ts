@@ -170,3 +170,50 @@ export const assessments = sqliteTable("assessments", {
   citedEventIdsCsv: text("cited_event_ids_csv"),
   modelId: text("model_id"),
 });
+
+// ── Admin Audit Logging ─────────────────────────────────────────────────────
+
+export const apiCalls = sqliteTable(
+  "api_calls",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    timestamp: text("timestamp").notNull(),
+    provider: text("provider").notNull(), // 'fred' | 'newsapi' | 'finnhub' | 'alphavantage' | 'anthropic'
+    endpoint: text("endpoint").notNull(),
+    method: text("method").notNull().default("GET"),
+    statusCode: integer("status_code"),
+    durationMs: integer("duration_ms"),
+    recordsReturned: integer("records_returned"),
+    error: text("error"),
+  },
+  (t) => [index("ix_api_calls_timestamp").on(t.timestamp), index("ix_api_calls_provider").on(t.provider)],
+);
+
+export const fileImports = sqliteTable(
+  "file_imports",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    timestamp: text("timestamp").notNull(),
+    importType: text("import_type").notNull(), // 'transamerica_account' | 'csv_watchlist'
+    filename: text("filename").notNull(),
+    status: text("status").notNull(), // 'success' | 'failed'
+    recordsProcessed: integer("records_processed"),
+    recordsFailed: integer("records_failed").default(0),
+    error: text("error"),
+  },
+  (t) => [index("ix_imports_timestamp").on(t.timestamp), index("ix_imports_type").on(t.importType)],
+);
+
+export const auditEvents = sqliteTable(
+  "audit_events",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    timestamp: text("timestamp").notNull(),
+    eventType: text("event_type").notNull(), // 'data_refresh' | 'watchlist_update' | 'portfolio_assessment' | 'login'
+    userId: text("user_id"), // future: when auth is added
+    action: text("action").notNull(),
+    details: text("details"), // JSON
+    status: text("status").notNull().default("success"), // 'success' | 'failed'
+  },
+  (t) => [index("ix_events_timestamp").on(t.timestamp), index("ix_events_type").on(t.eventType)],
+);

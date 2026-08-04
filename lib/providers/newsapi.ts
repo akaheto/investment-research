@@ -4,6 +4,8 @@
  * Docs: https://newsapi.org/
  */
 
+import { logApiCall } from "@/lib/audit/tracker";
+
 export interface NewsArticle {
   source: { id: string | null; name: string };
   author: string | null;
@@ -34,6 +36,7 @@ export class NewsAPIProvider {
       return [];
     }
 
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         q: query,
@@ -46,15 +49,38 @@ export class NewsAPIProvider {
         headers: { "User-Agent": "Investment Research Dashboard" },
       });
 
+      const duration = Date.now() - startTime;
+
       if (!response.ok) {
         console.error(`NewsAPI error: ${response.status}`);
+        logApiCall({
+          provider: "newsapi",
+          endpoint: `/everything?q=${query}`,
+          statusCode: response.status,
+          durationMs: duration,
+          error: `HTTP ${response.status}`,
+        });
         return [];
       }
 
       const data: NewsAPIResponse = await response.json();
+      logApiCall({
+        provider: "newsapi",
+        endpoint: `/everything?q=${query}`,
+        statusCode: 200,
+        durationMs: duration,
+        recordsReturned: data.articles.length,
+      });
       return data.articles.slice(0, limit);
     } catch (err) {
+      const duration = Date.now() - startTime;
       console.error("NewsAPI fetch failed:", err);
+      logApiCall({
+        provider: "newsapi",
+        endpoint: `/everything?q=${query}`,
+        durationMs: duration,
+        error: String(err),
+      });
       return [];
     }
   }

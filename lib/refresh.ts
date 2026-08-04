@@ -101,6 +101,14 @@ export async function runRefresh() {
     // FRED series refresh (T10Y2Y, DFF, UNRATE) is wired in with C4,
     // which defines which series the dashboard actually renders.
 
+    // Epic E: Generate narratives for watchlist
+    try {
+      const { generateNarrativesForWatchlist } = await import("@/app/narratives/actions");
+      await generateNarrativesForWatchlist();
+    } catch (e) {
+      console.warn("⚠️ Narrative generation failed:", e);
+    }
+
     const elapsed = Date.now() - start;
     console.log(`refresh completed in ${elapsed}ms:`, results);
     return results;

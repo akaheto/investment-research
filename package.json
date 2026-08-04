@@ -15,6 +15,7 @@
     "refresh": "node scripts/refresh.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@libsql/client": "^0.17.4",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.0",

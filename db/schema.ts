@@ -217,3 +217,42 @@ export const auditEvents = sqliteTable(
   },
   (t) => [index("ix_events_timestamp").on(t.timestamp), index("ix_events_type").on(t.eventType)],
 );
+
+// ── Epic E: News, Events & Narratives ──────────────────────────────────
+
+export const events = sqliteTable(
+  "events",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    eventDate: text("event_date").notNull(), // YYYY-MM-DD
+    eventType: text("event_type").notNull(), // 'fomc_meeting' | 'cpi_release' | 'earnings' | 'economic' | 'political'
+    title: text("title").notNull(),
+    description: text("description"),
+    instrumentId: integer("instrument_id").references(() => instruments.id), // null for macro events, populated for earnings
+    impactDirection: text("impact_direction"), // 'bullish' | 'bearish' | 'neutral' | null
+    source: text("source"), // 'fed' | 'bls' | 'company' | 'news' | etc
+    url: text("url"),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [
+    index("ix_events_date").on(t.eventDate),
+    index("ix_events_type").on(t.eventType),
+    index("ix_events_instrument").on(t.instrumentId),
+  ],
+);
+
+export const newsNarratives = sqliteTable(
+  "news_narratives",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    instrumentId: integer("instrument_id").notNull().references(() => instruments.id),
+    narrative: text("narrative").notNull(), // Claude-generated summary
+    recentHeadlines: text("recent_headlines"), // JSON array of news titles used for context
+    generatedAt: text("generated_at").notNull(),
+    expiresAt: text("expires_at").notNull(), // TTL: narratives expire after 7 days
+  },
+  (t) => [
+    index("ix_narratives_instrument").on(t.instrumentId),
+    index("ix_narratives_generated").on(t.generatedAt),
+  ],
+);

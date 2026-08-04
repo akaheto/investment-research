@@ -9,6 +9,29 @@ import { runRefresh } from "@/lib/refresh";
 import { computeScoresForWatchlist } from "@/app/screener/actions";
 import { fetchNewsForWatchlist } from "@/app/news/actions";
 import { getCacheStats, clearExpiredCache } from "@/lib/cache/provider-cache";
+import { db } from "@/db/client";
+import path from "node:path";
+
+/**
+ * One-time/idempotent: applies any pending SQL migrations to whichever
+ * database db/client.ts is currently pointed at (dev: file:local.db,
+ * prod: Turso via DATABASE_URL/TURSO_DATABASE_URL). Safe to re-run —
+ * drizzle skips migrations already recorded as applied.
+ */
+export async function runMigrations() {
+  try {
+    const { migrate } = await import("drizzle-orm/libsql/migrator");
+    const migrationsFolder = path.join(process.cwd(), "db/migrations");
+    console.log(`🔧 Applying migrations from ${migrationsFolder}...`);
+    await migrate(db, { migrationsFolder });
+    console.log("✓ Migrations applied");
+    return { ok: true, message: "✅ Migrations applied successfully" };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("❌ Migration failed:", error);
+    return { ok: false, message: `❌ Migration failed: ${errorMsg}` };
+  }
+}
 
 export async function triggerManualRefresh() {
   let result = { ok: false, message: "❌ Refresh failed: Unknown error" };

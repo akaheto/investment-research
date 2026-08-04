@@ -1,6 +1,7 @@
 import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { RefreshButton } from "../refresh-button";
+import { MigrateButton } from "../migrate-button";
 import { getApiStats, getRecentImports, getRecentEvents } from "@/lib/audit/tracker";
 import { getCacheStats } from "@/lib/cache/provider-cache";
 import { formatTimeEST } from "@/lib/format-time";
@@ -47,6 +48,12 @@ export default async function AdminAnalyticsPage() {
                 Cron job runs daily at 3:00 AM UTC. Trigger manual refresh below:
               </p>
               <RefreshButton />
+            </div>
+            <div>
+              <p className="text-sm text-muted mb-2">
+                Apply any pending database schema migrations (safe to re-run):
+              </p>
+              <MigrateButton />
             </div>
           </div>
         </Card>

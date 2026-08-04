@@ -4,10 +4,12 @@
  * for fallback: "primary|fallback|fallback".
  * Example: EQUITY_PROVIDER="fmp|yahoo" tries FMP first, falls back to Yahoo.
  */
-import { type EquityProvider, ProviderError } from "./types";
+import { type EquityProvider, type FundamentalsProvider, ProviderError } from "./types";
 import { YahooEquityProvider } from "./yahoo";
 import { CoinGeckoCryptoProvider } from "./coingecko";
 import { FredMacroProvider, type MacroProvider } from "./fred";
+import { FinnhubProvider } from "./finnhub";
+import { alphaVantageProvider } from "./alphavantage";
 
 const equityProviders: Record<string, () => EquityProvider> = {
   yahoo: () => new YahooEquityProvider(),
@@ -22,6 +24,11 @@ const cryptoProviders: Record<string, () => EquityProvider> = {
 const macroProviders: Record<string, () => MacroProvider> = {
   fred: () => new FredMacroProvider(),
   // future: ecb, ons, statscan
+};
+
+const fundamentalsProviders: Record<string, () => FundamentalsProvider> = {
+  finnhub: () => new FinnhubProvider(),
+  // future: fmp, intrinio, tiingo
 };
 
 /**
@@ -65,4 +72,17 @@ export function getMacroProvider(): MacroProvider {
   );
 }
 
+export function getFundamentalsProvider(): FundamentalsProvider {
+  const list = (process.env.FUNDAMENTALS_PROVIDER ?? "finnhub").split("|");
+  for (const key of list) {
+    const factory = fundamentalsProviders[key.trim()];
+    if (factory) return factory();
+  }
+  throw new ProviderError(
+    `No known FUNDAMENTALS_PROVIDER in "${list.join("|")}" — known: ${Object.keys(fundamentalsProviders).join(", ")}`,
+    { provider: list[0] },
+  );
+}
+
+export { alphaVantageProvider };
 export * from "./types";

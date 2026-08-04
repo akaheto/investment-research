@@ -1,44 +1,36 @@
-/**
- * E1 News headlines endpoint.
- * TODO: Integrate with SEC EDGAR RSS, Yahoo Finance news, and financial news APIs.
- * Returns headlines tagged with symbols and sentiment.
- */
+import { db } from "@/db/client";
+import { newsItems } from "@/db/schema";
+import { desc } from "drizzle-orm";
 
-import { NextRequest, NextResponse } from "next/server";
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const queryLimit = parseInt(searchParams.get("limit") || "20", 10);
 
-export async function GET(req: NextRequest) {
-  const limit = parseInt(req.nextUrl.searchParams.get("limit") || "10");
-  const symbols = req.nextUrl.searchParams.get("symbols")?.split(",");
+  try {
+    const items = await db
+      .select()
+      .from(newsItems)
+      .orderBy(desc(newsItems.publishedAt))
+      .limit(queryLimit);
 
-  // TODO: Query news_items from database and apply sentiment/symbol tagging
-  const mockHeadlines = [
-    {
-      id: "1",
-      headline: "Apple Reports Strong iPhone Sales in Q3",
-      source: "Bloomberg",
-      publishedAt: new Date(Date.now() - 2 * 3600000),
-      symbols: ["AAPL"],
-      sentiment: "positive" as const,
-    },
-    {
-      id: "2",
-      headline: "Fed Signals Potential Rate Cut in September",
-      source: "CNBC",
-      publishedAt: new Date(Date.now() - 5 * 3600000),
-      symbols: ["SPY", "QQQ"],
-      sentiment: "positive" as const,
-    },
-    {
-      id: "3",
-      headline: "Tech Sector Faces Regulatory Headwinds",
-      source: "Reuters",
-      publishedAt: new Date(Date.now() - 24 * 3600000),
-      symbols: ["MSFT", "GOOGL", "AAPL"],
-      sentiment: "negative" as const,
-    },
-  ];
-
-  const filtered = symbols ? mockHeadlines.filter((h) => h.symbols.some((s) => symbols.includes(s))) : mockHeadlines;
-
-  return NextResponse.json({ headlines: filtered.slice(0, limit) });
+    return Response.json({
+      ok: true,
+      count: items.length,
+      headlines: items.map((item) => ({
+        id: item.id,
+        headline: item.title,
+        source: item.source,
+        url: item.url,
+        publishedAt: new Date(item.publishedAt),
+        symbols: item.tickersCsv?.split(",").map((s) => s.trim()) || [],
+        sentiment: undefined, // TODO: Add sentiment analysis
+      })),
+    });
+  } catch (error) {
+    console.error("News API error:", error);
+    return Response.json(
+      { ok: false, error: String(error), headlines: [] },
+      { status: 500 }
+    );
+  }
 }

@@ -42,6 +42,13 @@ export interface EquityProvider {
   getDailyHistory(symbol: string, range: HistoryRange): Promise<PriceBar[]>;
 }
 
+export interface FundamentalsProvider {
+  getCompanyProfile(symbol: string): Promise<unknown>;
+  getMetrics(symbol: string): Promise<unknown>;
+  getEarningsEstimates(symbol: string): Promise<unknown>;
+  getSentiment(symbol: string): Promise<unknown>;
+}
+
 /** Uniform error wrapper so callers can handle any provider identically. */
 export class ProviderError extends Error {
   readonly provider: string;

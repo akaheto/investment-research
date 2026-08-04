@@ -68,12 +68,22 @@ export async function runRefresh() {
 
   try {
     // Refresh equities watchlist from the latest known symbols
-    // (Full implementation deferred to Epic B6 iteration; this outlines the shape)
     const provider = getEquityProvider();
-    const symbols: string[] = []; // TODO: join instruments + watchlist to get symbols
+
+    // Get symbols from watchlist + instruments join
+    const { watchlist } = await import("@/db/schema");
+    const { instruments: instrumentsTable } = await import("@/db/schema");
+
+    const watchlistItems = await db
+      .select({ symbol: instrumentsTable.symbol })
+      .from(watchlist)
+      .innerJoin(instrumentsTable, eq(watchlist.instrumentId, instrumentsTable.id));
+
+    const symbols = watchlistItems.map((item) => item.symbol);
+
     if (symbols.length > 0) {
       try {
-        await cachedFetch(
+        const quotes = await cachedFetch(
           provider.name,
           "quotes",
           { symbols },
@@ -81,6 +91,8 @@ export async function runRefresh() {
           () => provider.getQuotes(symbols),
         );
         results.symbols += symbols.length;
+        results.observations += Array.isArray(quotes) ? quotes.length : 0;
+        console.log(`fetched ${symbols.length} quotes from ${provider.name}`);
       } catch (e) {
         results.errors.push(`quotes: ${String(e)}`);
       }

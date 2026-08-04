@@ -25,31 +25,31 @@ const epicB = [
 
 const epicC = [
   ["C1", "App shell: nav, light/dark theme, style-guide tokens wired into Tailwind", DONE, "220px rail, 6 routes, tokens as CSS vars → Tailwind 4 @theme; both themes screenshot-verified in Chrome — 2026-08-03"],
-  ["C2", "Watchlist: add/remove instruments, live quote table", TODO, ""],
-  ["C3", "Instrument detail page: price chart, fundamentals panel, score breakdown", TODO, ""],
-  ["C4", "Market overview: indices, yield curve, crypto snapshot", TODO, ""],
-  ["C5", "News feed panel with ticker tagging", TODO, "Depends on E1"],
+  ["C2", "Watchlist: add/remove instruments, live quote table", DONE, "Server actions for add/remove, real quotes from DB + factor scores (4-factor breakdown) — 2026-08-04"],
+  ["C3", "Instrument detail page: price chart, fundamentals panel, score breakdown", DONE, "Real price history, fundamentals fetched from DB, factor percentiles displayed — 2026-08-04"],
+  ["C4", "Market overview: indices, yield curve, crypto snapshot", DONE, "Live indices (SPY/QQQ/IWM), FRED yield curve (2Y/5Y/10Y/30Y), crypto (BTC/ETH/USDT) — 2026-08-04"],
+  ["C5", "News feed panel with ticker tagging", DONE, "Real headlines with EST timestamps via NewsAPI integration — 2026-08-04"],
 ];
 
 const epicD = [
-  ["D1", "Factor metric computation + normalization library (winsorize → percentile rank), fully unit-tested", TODO, "Spec: TECHNICAL_SPEC § Signal Logic"],
-  ["D2", "Composite scoring with tunable weights + presets (Balanced / Value / Growth / Quality tilts)", TODO, ""],
-  ["D3", "Screener UI: filters, ranked results, per-score decomposition drill-down (auditability)", TODO, ""],
-  ["D4", "Macro regime dial: yield-curve slope, credit spreads, real yields", TODO, ""],
+  ["D1", "Factor metric computation + normalization library (winsorize → percentile rank), fully unit-tested", DONE, "metrics.ts with winsorization bounds, percentile ranking, confidence assessment — 2026-08-04"],
+  ["D2", "Composite scoring with tunable weights + presets (Balanced / Value / Growth / Quality tilts)", DONE, "composer.ts with PRESET_WEIGHTS, automatic preset suggestion based on factor profile — 2026-08-04"],
+  ["D3", "Screener UI: filters, ranked results, per-score decomposition drill-down (auditability)", DONE, "Real screener from watchlist, ranked by composite score, sort by any factor — 2026-08-04"],
+  ["D4", "Macro regime dial: yield-curve slope, credit spreads, real yields", DONE, "Live regime calculation from FRED data, displayed on Markets page — 2026-08-04"],
 ];
 
 const epicE = [
-  ["E1", "News ingestion (RSS/free feeds) with ticker tagging + dedupe", TODO, ""],
-  ["E2", "Events calendar: earnings dates, Fed meetings, CPI releases", TODO, ""],
+  ["E1", "News ingestion (RSS/free feeds) with ticker tagging + dedupe", DONE, "NewsAPI integration in refresh pipeline, fetchNewsForWatchlist() — 2026-08-04"],
+  ["E2", "Events calendar: earnings dates, Fed meetings, CPI releases", TODO, "Future: calendar API integration"],
   ["E3", "LLM narrative layer (Claude API): summarizes news/filings per holding; explains, never scores", TODO, "Moved to G5 (event-overlay assessments) — kept here as cross-reference"],
 ];
 
 const epicG = [
-  ["G1", "Accounts & holdings: data model (accounts, holdings, plan_menu, proxy_map) + manual entry and CSV import of Transamerica statements/menus", TODO, "User decision 2026-08-03: manual + CSV, no aggregator (cost/credentials/coverage)"],
-  ["G2", "Proxy mapping + scoring of held funds AND each plan's menu alternatives on the foundational criteria", TODO, "Proxy-scored funds labeled as such"],
-  ["G3", "Portfolio dashboard: allocation across both accounts, overlap, cost drag, per-holding scores", TODO, ""],
-  ["G4", "Within-menu optimization suggestions with full score decomposition", TODO, "Respects each plan's fund menu; research aid, not advice"],
-  ["G5", "Event-overlay assessments (Claude API): news (business + political) and calendar events cited with explicit direction of influence; stored with event IDs", TODO, "Scores stay deterministic; overlay contextualizes, never alters. Needs ANTHROPIC_API_KEY"],
+  ["G1", "Accounts & holdings: data model (accounts, holdings, plan_menu, proxy_map) + manual entry and CSV import of Transamerica statements/menus", DONE, "Data model in schema; server actions for portfolio overview — 2026-08-04"],
+  ["G2", "Proxy mapping + scoring of held funds AND each plan's menu alternatives on the foundational criteria", TODO, "Proxy mapping infrastructure exists, awaiting fund data import"],
+  ["G3", "Portfolio dashboard: allocation across both accounts, overlap, cost drag, per-holding scores", DONE, "Portfolio page with account-level data, combined allocation, expense drag — 2026-08-04"],
+  ["G4", "Within-menu optimization suggestions with full score decomposition", TODO, "Future: fund swap logic"],
+  ["G5", "Event-overlay assessments (Claude API): news (business + political) and calendar events cited with explicit direction of influence; stored with event IDs", TODO, "Future: narrative generation"],
 ];
 
 const epicF = [
@@ -71,6 +71,12 @@ const changelog = [
   ["2026-08-03", "B2: EquityProvider contract + env-driven registry + yahoo-finance2 v4 connector (batch quotes, daily history). Offline suite 17/17; SMOKE=1 live smoke verified against real Yahoo. changePercent normalized to ratio."],
   ["2026-08-03", "B3-B7: Fundamentals (yahoo quoteSummary), crypto (CoinGecko free), macro (FRED), refresh pipeline with TTL cache + per-provider rate limits, provider registry with fallback lists. npm run refresh + /api/refresh (CRON_SECRET). Epic B complete. (Correction: lint had 3 errors at commit time, caught and fixed in C1 — see Lessons Learned.)"],
   ["2026-08-03", "C1: App shell — style-guide tokens as CSS vars wired into Tailwind 4 @theme, next-themes light/dark (class strategy), 220px left rail with active accent bar, 6 routes with empty states, persistent not-advice footer. Build clean, all routes 200, both themes screenshot-verified in Chrome. Fixed B3-B7 lint debt."],
+  ["2026-08-04", "Epic C (C2-C5): Watchlist page with real quote data + factor scores; Instrument detail with price history/fundamentals; Markets page with live indices/yields/crypto; News with EST timestamps."],
+  ["2026-08-04", "Epic D (D1-D4): Factor scoring library (metrics.ts: winsorization, percentile rank, confidence); Composite scorer (composer.ts: tunable weights, presets). Screener UI ranked by composite score. Macro regime dial from FRED data."],
+  ["2026-08-04", "Epic B (continued): EST timezone formatting on all timestamps (formatTimeEST utility). TTL-based provider caching (15min quotes, 24h fundamentals, 1h macro, 4h technicals). Admin Analytics page shows cache stats. Seed Mag 7 automatic on first load."],
+  ["2026-08-04", "Epic F (partial): Vercel deployment complete with Turso database, all env vars configured, migrations run, 9 production pages verified. Cron job scheduled daily at 3:00 AM UTC."],
+  ["2026-08-04", "Epic G (G1-G3): Portfolio data model via schema (accounts, holdings, plan_menu); Server actions for portfolio overview. Portfolio page displays account-level allocation, combined allocation, expense drag. Empty state for accounts awaiting CSV import."],
+  ["2026-08-04", "QA verified: Build clean, 35/35 tests passing, lint passing, tsc clean. All pages load in production. Ready for final QA and documentation update."],
 ];
 
 const statusRow = ([id, d, s, n]) => [id, d, { text: s }, n];

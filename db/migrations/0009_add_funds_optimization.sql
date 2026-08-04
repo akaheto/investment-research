@@ -11,10 +11,11 @@ CREATE TABLE IF NOT EXISTS funds (
   asset_class_slot TEXT,
   created_at TEXT NOT NULL
 );
-
+--> statement-breakpoint
 CREATE INDEX ix_funds_category ON funds(fund_category);
+--> statement-breakpoint
 CREATE INDEX ix_funds_assetclass ON funds(asset_class_slot);
-
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS fund_performance (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   fund_id INTEGER NOT NULL REFERENCES funds(id),
@@ -27,10 +28,11 @@ CREATE TABLE IF NOT EXISTS fund_performance (
   five_years_percent REAL,
   ten_years_percent REAL
 );
-
+--> statement-breakpoint
 CREATE INDEX ix_perf_fund ON fund_performance(fund_id);
+--> statement-breakpoint
 CREATE INDEX ix_perf_date ON fund_performance(as_of);
-
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS fund_holdings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   account_id INTEGER NOT NULL REFERENCES accounts(id),
@@ -40,10 +42,11 @@ CREATE TABLE IF NOT EXISTS fund_holdings (
   allocation_percent REAL NOT NULL,
   as_of TEXT NOT NULL
 );
-
+--> statement-breakpoint
 CREATE INDEX ix_holdings_account ON fund_holdings(account_id);
+--> statement-breakpoint
 CREATE INDEX ix_holdings_fund ON fund_holdings(fund_id);
-
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS optimization_suggestions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   account_id INTEGER NOT NULL REFERENCES accounts(id),
@@ -54,6 +57,7 @@ CREATE TABLE IF NOT EXISTS optimization_suggestions (
   risk_adjustment TEXT,
   created_at TEXT NOT NULL
 );
-
+--> statement-breakpoint
 CREATE INDEX ix_sugg_account ON optimization_suggestions(account_id);
+--> statement-breakpoint
 CREATE INDEX ix_sugg_currentfund ON optimization_suggestions(current_fund_id);

@@ -32,3 +32,8 @@ All notable changes to this project. One entry per deliverable.
   Epic G portfolio tables), committed SQL migrations, env-driven client
   (`file:local.db` ↔ Turso), `npm run db:migrate` runner. 4 schema tests
   incl. unhappy paths (duplicate snapshot, NOT NULL); suite 9/9 green.
+- **B2** — Provider layer: `EquityProvider` contract (batch quotes, daily
+  history, ratio-normalized changePercent), env-driven registry
+  (`EQUITY_PROVIDER`, default yahoo), yahoo-finance2 v4 adapter with
+  injectable client. Offline tests 17/17 incl. 4 unhappy paths; `SMOKE=1`
+  live smoke verified against real Yahoo (AAPL/VTI quotes, 1mo history).

@@ -15,7 +15,7 @@ const epicA = [
 
 const epicB = [
   ["B1", "Database layer: Drizzle + libSQL, schema v1 (instruments, prices, fundamentals, watchlist), migrations", DONE, "13 tables incl. Epic G; committed SQL migrations; 4 schema tests (2 unhappy paths) — 2026-08-03"],
-  ["B2", "Provider interface + equities/ETF connector (yahoo-finance2): quotes + price history", TODO, "Provider-agnostic interface is the upgrade path"],
+  ["B2", "Provider interface + equities/ETF connector (yahoo-finance2): quotes + price history", DONE, "EquityProvider contract + registry; offline tests (4 unhappy paths) + live smoke vs real Yahoo — 2026-08-03"],
   ["B3", "Fundamentals ingestion for stocks/ETFs (valuation, growth, quality metrics)", TODO, ""],
   ["B4", "Crypto connector (CoinGecko free tier)", TODO, ""],
   ["B5", "Macro/rates connector (FRED): yields, curve, inflation, unemployment", TODO, "Free API key required (user)"],
@@ -68,6 +68,7 @@ const changelog = [
   ["2026-08-03", "A6: baseline clean — lint, 5/5 tests, typecheck. Epic A complete."],
   ["2026-08-03", "Scope addition (user): Epic G — portfolio assessment & optimization for two Transamerica Retirement accounts, with news/political-event influence explicitly called out in assessments. Holdings via manual entry + CSV (user decision). E3 narrative layer folded into G5."],
   ["2026-08-03", "B1: Drizzle + libSQL database layer — schema v1 (13 tables incl. Epic G), committed SQL migrations, env-driven client (file:local.db ↔ Turso), migration runner, schema tests green (9/9 suite)."],
+  ["2026-08-03", "B2: EquityProvider contract + env-driven registry + yahoo-finance2 v4 connector (batch quotes, daily history). Offline suite 17/17; SMOKE=1 live smoke verified against real Yahoo. changePercent normalized to ratio."],
 ];
 
 const statusRow = ([id, d, s, n]) => [id, d, { text: s }, n];

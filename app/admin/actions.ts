@@ -30,18 +30,19 @@ export async function triggerManualRefresh() {
 
     // 3. Fetch news for watchlist
     const news = await fetchNewsForWatchlist();
-    console.log(`✓ News fetched: ${news.count} articles`);
+    const newsCount = (news as any).count || 0;
+    console.log(`✓ News fetched: ${newsCount} articles`);
 
     logAuditEvent({
       eventType: "data_refresh",
       action: "Manual refresh completed",
       status: "success",
-      details: { prices, scores: scores.count, news: news.count },
+      details: { prices, scores: scores.count, news: newsCount },
     });
 
     return {
       ok: true,
-      message: `Refresh complete: ${prices.symbols} prices, ${scores.count} scores, ${news.count} news items`,
+      message: `Refresh complete: ${prices.symbols} prices, ${scores.count} scores, ${newsCount} news items`,
       result: { prices, scores, news },
     };
   } catch (error) {

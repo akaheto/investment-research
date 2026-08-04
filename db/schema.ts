@@ -256,3 +256,62 @@ export const newsNarratives = sqliteTable(
     index("ix_narratives_generated").on(t.generatedAt),
   ],
 );
+
+// ── Epic G: Portfolio Assessment & Optimization ────────────────────────
+
+export const funds = sqliteTable(
+  "funds",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    fundName: text("fund_name").notNull(),
+    fundCategory: text("fund_category").notNull(), // 'money_market' | 'bonds' | 'large_cap' | 'mid_cap' | 'intl' | 'target_date'
+    inceptionDate: text("inception_date"), // YYYY-MM-DD
+    unitShareValue: real("unit_share_value"),
+    expenseRatioGross: real("expense_ratio_gross"), // Gross %
+    expenseRatioNet: real("expense_ratio_net"), // Net %
+    assetClassSlot: text("asset_class_slot"), // 'us_large_cap' | 'us_mid_cap' | 'bonds' | 'intl' | 'mm' | 'target_date'
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [
+    index("ix_funds_category").on(t.fundCategory),
+    index("ix_funds_assetclass").on(t.assetClassSlot),
+  ],
+);
+
+export const fundPerformance = sqliteTable(
+  "fund_performance",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    fundId: integer("fund_id").notNull().references(() => funds.id),
+    asOf: text("as_of").notNull(), // Date of performance snapshot
+    oneMonthPercent: real("one_month_percent"),
+    threeMonthsPercent: real("three_months_percent"),
+    ytdPercent: real("ytd_percent"),
+    oneYearPercent: real("one_year_percent"),
+    threeYearsPercent: real("three_years_percent"),
+    fiveYearsPercent: real("five_years_percent"),
+    tenYearsPercent: real("ten_years_percent"),
+  },
+  (t) => [
+    index("ix_perf_fund").on(t.fundId),
+    index("ix_perf_date").on(t.asOf),
+  ],
+);
+
+export const optimizationSuggestions = sqliteTable(
+  "optimization_suggestions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    accountId: integer("account_id").notNull().references(() => accounts.id),
+    currentFundId: integer("current_fund_id").notNull().references(() => funds.id),
+    suggestedFundId: integer("suggested_fund_id").notNull().references(() => funds.id),
+    reason: text("reason").notNull(), // 'lower_expense_ratio' | 'better_performance' | 'similar_allocation_lower_cost'
+    estimatedAnnualSavings: real("estimated_annual_savings"), // in dollars
+    riskAdjustment: text("risk_adjustment"), // 'none' | 'higher' | 'lower'
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [
+    index("ix_sugg_account").on(t.accountId),
+    index("ix_sugg_currentfund").on(t.currentFundId),
+  ],
+);

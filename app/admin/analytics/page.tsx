@@ -3,7 +3,6 @@ import { PageHeader } from "@/components/page-header";
 import { RefreshButton } from "../refresh-button";
 import { getApiStats, getRecentImports, getRecentEvents } from "@/lib/audit/tracker";
 import { getCacheStats } from "@/lib/cache/provider-cache";
-import { seedMag7 } from "../seed-action";
 import { formatTimeEST } from "@/lib/format-time";
 
 /**

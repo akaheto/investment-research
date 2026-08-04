@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db/client";
-import { funds, fundPerformance, fundHoldings, accounts } from "@/db/schema";
+import { funds, fundPerformance, fundHoldings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 interface FundData {
@@ -286,7 +286,6 @@ const TRANSAMERICA_FUNDS: FundData[] = [
  */
 export async function seedTransamericaFunds(): Promise<{ ok: boolean; count?: number; message?: string }> {
   try {
-    const now = new Date().toISOString();
     const asOfDate = "2026-07-31"; // From the fund menu report
 
     let count = 0;
@@ -349,7 +348,6 @@ export async function loadMainAccountHoldings(accountId: number): Promise<{
   message?: string;
 }> {
   try {
-    const now = new Date().toISOString();
     const asOfDate = "2026-07-31";
 
     // Holdings data for Main 403b account
@@ -360,6 +358,69 @@ export async function loadMainAccountHoldings(accountId: number): Promise<{
       { fundName: "Fidelity Extended Market Index", units: 707.127639, balance: 82203.59, percent: 10.18 },
       { fundName: "Principal Global Real Estate Sec Inst", units: 3811.734151, balance: 40785.55, percent: 5.05 },
       { fundName: "Fidelity International Index", units: 2986.097438, balance: 204069.89, percent: 25.27 },
+    ];
+
+    let totalBalance = 0;
+    let count = 0;
+
+    for (const holding of holdings) {
+      // Find the fund by name
+      const fund = await db
+        .select()
+        .from(funds)
+        .where(eq(funds.fundName, holding.fundName))
+        .limit(1);
+
+      if (fund.length === 0) {
+        console.warn(`Fund not found: ${holding.fundName}`);
+        continue;
+      }
+
+      // Insert holding
+      await db
+        .insert(fundHoldings)
+        .values({
+          accountId,
+          fundId: fund[0].id,
+          unitsOwned: holding.units,
+          balanceAmount: holding.balance,
+          allocationPercent: holding.percent,
+          asOf: asOfDate,
+        })
+        .onConflictDoNothing();
+
+      totalBalance += holding.balance;
+      count++;
+    }
+
+    console.log(`✓ Loaded ${count} holdings for account ${accountId}, total balance: $${totalBalance.toFixed(2)}`);
+    return { ok: true, count, totalBalance, message: `Loaded ${count} holdings, total balance: $${totalBalance.toFixed(2)}` };
+  } catch (error) {
+    console.error("Failed to load holdings:", error);
+    return { ok: false, message: String(error) };
+  }
+}
+
+/**
+ * Load holdings for Management Staff IRA account
+ * Data from user's account statement as of 07/31/2026
+ */
+export async function loadManagementStaffIRAHoldings(accountId: number): Promise<{
+  ok: boolean;
+  count?: number;
+  totalBalance?: number;
+  message?: string;
+}> {
+  try {
+    const asOfDate = "2026-07-31";
+
+    // Holdings data for Management Staff IRA account
+    const holdings = [
+      { fundName: "Dodge & Cox Stock X", units: 1.091560466, balance: 19779.08, percent: 24.24 },
+      { fundName: "Fidelity 500 Index Institutional Prem", units: 126.278954, balance: 33366.69, percent: 40.90 },
+      { fundName: "NYLI Winslow Large Cap Growth R6", units: 1.265846058, balance: 15278.76, percent: 18.73 },
+      { fundName: "Principal Global Real Estate Sec Inst", units: 621.288684, balance: 6647.79, percent: 8.15 },
+      { fundName: "Fidelity International Index", units: 95.300974, balance: 6512.87, percent: 7.98 },
     ];
 
     let totalBalance = 0;

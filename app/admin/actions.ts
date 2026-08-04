@@ -45,8 +45,8 @@ export async function triggerManualRefresh() {
     // 3. Fetch news for watchlist
     let newsCount = 0;
     try {
-      const news = await fetchNewsForWatchlist();
-      newsCount = (news as any).count || 0;
+      const news = await fetchNewsForWatchlist() as { ok: boolean; count?: number };
+      newsCount = news.count || 0;
       console.log(`✓ News fetched: ${newsCount} articles`);
     } catch (newsErr) {
       console.warn("⚠️ News fetch failed:", newsErr);

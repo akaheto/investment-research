@@ -1,13 +1,16 @@
-import { Card, EmptyState } from "@/components/card";
+import { Card } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
+import { AdminPanel } from "@/components/admin-panel";
 
 export default function SettingsPage() {
   return (
     <>
       <PageHeader title="Settings" caption="Providers, refresh cadence, and scoring presets" />
-      <Card>
-        <EmptyState>Nothing to configure yet — provider and preset settings arrive with later epics.</EmptyState>
-      </Card>
+      <div className="grid grid-cols-12 gap-4">
+        <Card title="Admin Setup" className="col-span-12 lg:col-span-6">
+          <AdminPanel />
+        </Card>
+      </div>
     </>
   );
 }

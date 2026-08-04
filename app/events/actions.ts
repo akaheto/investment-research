@@ -2,7 +2,7 @@
 
 import { db } from "@/db/client";
 import { events } from "@/db/schema";
-import { desc, gte } from "drizzle-orm";
+import { gte } from "drizzle-orm";
 
 export interface EventSummary {
   id: number;

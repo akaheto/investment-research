@@ -15,6 +15,20 @@
       "when": 1785839089072,
       "tag": "0001_slippery_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785851392000,
+      "tag": "0008_add_events_narratives",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785851400000,
+      "tag": "0009_add_funds_optimization",
+      "breakpoints": true
     }
   ]
 }

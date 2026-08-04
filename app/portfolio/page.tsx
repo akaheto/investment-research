@@ -1,100 +1,144 @@
-import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
-import { getPortfolioOverview } from "./actions";
+import { PortfolioOverview } from "@/components/portfolio-overview";
+import { HoldingsTable } from "@/components/holdings-table";
+import { OptimizationSummary } from "@/components/optimization-summary";
+import { db } from "@/db/client";
+import { accounts, fundHoldings, funds, optimizationSuggestions } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export default async function PortfolioPage() {
-  const portfolio = await getPortfolioOverview();
-  const hasAccounts = portfolio.accounts.length > 0;
+  // Fetch accounts with their holdings
+  const allAccounts = await db.select().from(accounts);
 
-  const avgExpenseRatio = (portfolio.costDragBps).toFixed(1);
+  if (allAccounts.length === 0) {
+    return (
+      <>
+        <PageHeader title="Portfolio" caption="Holdings and optimization analysis" />
+        <div className="text-center py-12">
+          <p className="text-muted">No accounts configured. Go to Settings to add accounts.</p>
+        </div>
+      </>
+    );
+  }
+
+  // Use first account (Main 403b)
+  const account = allAccounts[0];
+
+  // Fetch holdings for this account
+  const holdings = await db
+    .select()
+    .from(fundHoldings)
+    .where(eq(fundHoldings.accountId, account.id));
+
+  // Fetch fund details
+  const fundDetails = await db.select().from(funds);
+  const fundMap = new Map(fundDetails.map((f) => [f.id, f]));
+
+  // Fetch optimization suggestions for this account
+  const suggestions = await db
+    .select()
+    .from(optimizationSuggestions)
+    .where(eq(optimizationSuggestions.accountId, account.id));
+
+  // Map suggestions by current fund ID for quick lookup
+  const suggestionMap = new Map(
+    suggestions.map((s) => [s.currentFundId, s])
+  );
+
+  // Calculate portfolio stats
+  let totalBalance = 0;
+  let totalWeightedER = 0;
+  let totalSavings = 0;
+  let lowRiskCount = 0;
+  let mediumRiskCount = 0;
+  let highRiskCount = 0;
+
+  interface HoldingDisplay {
+    fundName: string;
+    balance: number;
+    allocationPercent: number;
+    expenseRatio: number;
+    ytdReturn: null;
+    isOptimal: boolean;
+    suggestedFund?: {
+      name: string;
+      expenseRatio: number;
+      annualSavings: number;
+    };
+  }
+  const holdingsList: HoldingDisplay[] = [];
+
+  for (const holding of holdings) {
+    const fund = fundMap.get(holding.fundId);
+    if (!fund) continue;
+
+    const er = fund.expenseRatioNet ?? 0;
+    totalBalance += holding.balanceAmount;
+    totalWeightedER += er * (holding.balanceAmount / 1000000); // Weighted by balance
+
+    // Check if there's a suggestion for this holding
+    const suggestion = suggestionMap.get(holding.fundId);
+    const suggestedFund = suggestion ? fundMap.get(suggestion.suggestedFundId) : null;
+
+    if (suggestion && suggestedFund) {
+      totalSavings += suggestion.estimatedAnnualSavings ?? 0;
+      if (suggestion.riskAdjustment === "lower") lowRiskCount++;
+      else if (suggestion.riskAdjustment === "none") mediumRiskCount++;
+      else if (suggestion.riskAdjustment === "higher") highRiskCount++;
+    }
+
+    holdingsList.push({
+      fundName: fund.fundName,
+      balance: holding.balanceAmount,
+      allocationPercent: holding.allocationPercent,
+      expenseRatio: er,
+      ytdReturn: null,
+      isOptimal: !suggestion, // Optimal if no suggestion needed
+      ...(suggestion && suggestedFund && {
+        suggestedFund: {
+          name: suggestedFund.fundName,
+          expenseRatio: suggestedFund.expenseRatioNet ?? 0,
+          annualSavings: suggestion.estimatedAnnualSavings ?? 0,
+        },
+      }),
+    });
+  }
+
+  const avgExpenseRatio = holdings.length > 0 ? (totalBalance > 0 ? (totalWeightedER * 1000000) / totalBalance : 0) : 0;
+  const annualFeesEstimate = totalBalance * (avgExpenseRatio / 100);
+
+  const portfolioStats = {
+    totalBalance,
+    avgExpenseRatio,
+    annualFeesEstimate,
+    holdingCount: holdings.length,
+  };
+
+  const optimizationSummary = {
+    totalSuggestions: suggestions.length,
+    totalAnnualSavings: totalSavings,
+    lowRiskSwaps: lowRiskCount,
+    mediumRiskSwaps: mediumRiskCount,
+    highRiskSwaps: highRiskCount,
+  };
 
   return (
     <>
-      <PageHeader title="Portfolio" caption="Transamerica accounts, assessment, and recommendations" />
+      <PageHeader
+        title="Portfolio"
+        caption={`${account.name} - ${account.taxType?.toUpperCase()}`}
+      />
 
-      {!hasAccounts ? (
-        <Card>
-          <EmptyState>
-            No portfolio accounts configured yet. To set up your portfolio, you can add Transamerica account data via CSV
-            import in the Admin section. Portfolio features include: allocation tracking, expense ratio analysis, and
-            fund swap recommendations.
-          </EmptyState>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-12 gap-4">
-          {/* Summary stats */}
-          <Card className="col-span-12 lg:col-span-3">
-            <div className="space-y-3">
-              <div>
-                <div className="text-xs text-muted mb-1">Total Balance</div>
-                <div className="text-2xl font-semibold text-ink">${(portfolio.totalBalance / 1e6).toFixed(2)}M</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted mb-1">Accounts</div>
-                <div className="text-lg font-semibold text-accent">{portfolio.accounts.length}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted mb-1">Avg Expense Ratio</div>
-                <div className="text-sm text-ink">{avgExpenseRatio} bps</div>
-              </div>
-            </div>
-          </Card>
+      <div className="space-y-4">
+        {/* Portfolio Overview Stats */}
+        <PortfolioOverview stats={portfolioStats} />
 
-          {/* Accounts table */}
-          <Card title="Accounts" className="col-span-12 lg:col-span-9">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-hairline text-left">
-                    <th className="px-4 py-2 font-semibold text-ink-2">Account</th>
-                    <th className="px-4 py-2 text-right font-semibold text-ink-2">Balance</th>
-                    <th className="px-4 py-2 text-right font-semibold text-ink-2">Equities</th>
-                    <th className="px-4 py-2 text-right font-semibold text-ink-2">Bonds</th>
-                    <th className="px-4 py-2 text-right font-semibold text-ink-2">Expense Ratio</th>
-                    <th className="px-4 py-2" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {portfolio.accounts.map((account) => (
-                    <tr key={account.id} className="border-b border-hairline hover:bg-page">
-                      <td className="px-4 py-2 font-semibold text-accent">{account.name}</td>
-                      <td className="px-4 py-2 text-right text-ink">
-                        ${(account.balance / 1000).toFixed(0)}k
-                      </td>
-                      <td className="px-4 py-2 text-right text-ink">{Math.round(account.allocation.equities)}%</td>
-                      <td className="px-4 py-2 text-right text-ink">{Math.round(account.allocation.bonds)}%</td>
-                      <td className="px-4 py-2 text-right text-muted">{account.expenseRatioBps} bps</td>
-                      <td className="px-4 py-2 text-right">
-                        <a href={`/portfolio/${account.id}`} className="text-accent text-xs hover:underline">
-                          View →
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+        {/* Holdings Table with Suggestions */}
+        <HoldingsTable holdings={holdingsList} />
 
-          {/* Combined allocation */}
-          <Card title="Combined Allocation" className="col-span-12">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-semibold text-ink">{portfolio.combinedAllocation.equities}%</div>
-                <div className="text-xs text-muted">Equities</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-semibold text-ink">{portfolio.combinedAllocation.bonds}%</div>
-                <div className="text-xs text-muted">Bonds</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-semibold text-ink">{portfolio.combinedAllocation.other}%</div>
-                <div className="text-xs text-muted">Other</div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
+        {/* Optimization Summary */}
+        <OptimizationSummary summary={optimizationSummary} />
+      </div>
     </>
   );
 }

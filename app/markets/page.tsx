@@ -1,6 +1,7 @@
 import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { RegimeDial } from "@/components/regime-dial";
+import { EventsWidget } from "@/app/components/events-widget";
 import { getMarketIndices, getYieldCurve, getTopCrypto, getMacroRegime } from "./actions";
 
 export default async function MarketsPage() {
@@ -78,6 +79,7 @@ export default async function MarketsPage() {
             <EmptyState>No crypto data available yet</EmptyState>
           )}
         </Card>
+        <EventsWidget />
       </div>
     </>
   );

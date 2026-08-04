@@ -33,7 +33,8 @@ await writeDoc("TECHNICAL_SPEC.docx", [
     ["Docs", "docx npm package via scripts/gen-docs", "All .docx are generated; never hand-edited."],
   ], { widths: [16, 30, 54] }),
 
-  h1("4. Data Model (v1 plan — implemented in Epic B1)"),
+  h1("4. Data Model (implemented — B1, 2026-08-03; source of truth: db/schema.ts)"),
+  p("Conventions: dates/timestamps are ISO-8601 TEXT (sorts correctly in SQLite); fundamentals are long/narrow so new metrics need no migration; snake_case columns behind camelCase Drizzle fields. Instruments are unique per (symbol, assetClass) so a crypto ticker can coexist with a stock ticker. Holdings are point-in-time snapshots — one row per fund per as-of date — preserving history for later analysis."),
   table(["Table", "Purpose", "Key columns"], [
     ["instruments", "Everything trackable: stock, ETF, crypto, bond-proxy, index", "id, symbol, name, assetClass, sector, currency, active"],
     ["prices_daily", "EOD OHLCV history per instrument", "instrumentId, date, open, high, low, close, volume (unique instrumentId+date)"],
@@ -152,4 +153,5 @@ await writeDoc("TECHNICAL_SPEC.docx", [
   bullet("Project directory lives in Google Drive sync — node_modules churn; recommend excluding it from sync."),
   bullet("Proxy-scored plan funds inherit the proxy's data, not the fund's actual holdings — close for index funds, looser for active CITs; the confidence field and labeling carry this caveat to the UI."),
   bullet("Manually entered holdings go stale between updates; every portfolio view shows the holdings as-of date and nags past 60 days."),
+  bullet("Foreign keys are declared in the schema but SQLite/libSQL does not enforce them without a per-connection pragma (unreliable over Turso HTTP) — referential integrity is maintained at the application layer; unique and NOT NULL constraints are enforced by the database and covered by tests."),
 ]);

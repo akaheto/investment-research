@@ -28,3 +28,7 @@ All notable changes to this project. One entry per deliverable.
   optimization (manual + CSV holdings ingest, within-menu suggestions,
   event-overlay assessments with cited news influence). FRED API key
   received and stored in .env; .env.example added.
+- **B1** — Database layer: Drizzle + libSQL schema v1 (13 tables incl.
+  Epic G portfolio tables), committed SQL migrations, env-driven client
+  (`file:local.db` ↔ Turso), `npm run db:migrate` runner. 4 schema tests
+  incl. unhappy paths (duplicate snapshot, NOT NULL); suite 9/9 green.

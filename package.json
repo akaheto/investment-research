@@ -8,9 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "gen:docs": "node scripts/gen-docs/project-plan.mjs && node scripts/gen-docs/technical-spec.mjs && node scripts/gen-docs/style-guide.mjs && node scripts/gen-docs/user-guide.mjs && node scripts/gen-docs/enhancements.mjs"
+    "gen:docs": "node scripts/gen-docs/project-plan.mjs && node scripts/gen-docs/technical-spec.mjs && node scripts/gen-docs/style-guide.mjs && node scripts/gen-docs/user-guide.mjs && node scripts/gen-docs/enhancements.mjs",
+    "db:migrate": "node db/migrate.mjs",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.4",
+    "drizzle-orm": "^0.45.2",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
@@ -21,6 +25,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "docx": "^9.7.1",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",

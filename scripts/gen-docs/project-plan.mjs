@@ -14,7 +14,7 @@ const epicA = [
 ];
 
 const epicB = [
-  ["B1", "Database layer: Drizzle + libSQL, schema v1 (instruments, prices, fundamentals, watchlist), migrations", TODO, "Local file DB; Turso-compatible for Vercel"],
+  ["B1", "Database layer: Drizzle + libSQL, schema v1 (instruments, prices, fundamentals, watchlist), migrations", DONE, "13 tables incl. Epic G; committed SQL migrations; 4 schema tests (2 unhappy paths) — 2026-08-03"],
   ["B2", "Provider interface + equities/ETF connector (yahoo-finance2): quotes + price history", TODO, "Provider-agnostic interface is the upgrade path"],
   ["B3", "Fundamentals ingestion for stocks/ETFs (valuation, growth, quality metrics)", TODO, ""],
   ["B4", "Crypto connector (CoinGecko free tier)", TODO, ""],
@@ -67,6 +67,7 @@ const changelog = [
   ["2026-08-03", "A5: doc set generated via scripts/gen-docs (docx-js): this plan, TECHNICAL_SPEC, VISUAL_STYLE_GUIDE, USER_GUIDE, ENHANCEMENTS + README/CHANGELOG. Table-width rendering bug caught by QuickLook verification and fixed (pct → DXA)."],
   ["2026-08-03", "A6: baseline clean — lint, 5/5 tests, typecheck. Epic A complete."],
   ["2026-08-03", "Scope addition (user): Epic G — portfolio assessment & optimization for two Transamerica Retirement accounts, with news/political-event influence explicitly called out in assessments. Holdings via manual entry + CSV (user decision). E3 narrative layer folded into G5."],
+  ["2026-08-03", "B1: Drizzle + libSQL database layer — schema v1 (13 tables incl. Epic G), committed SQL migrations, env-driven client (file:local.db ↔ Turso), migration runner, schema tests green (9/9 suite)."],
 ];
 
 const statusRow = ([id, d, s, n]) => [id, d, { text: s }, n];

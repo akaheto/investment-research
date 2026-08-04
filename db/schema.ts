@@ -298,6 +298,23 @@ export const fundPerformance = sqliteTable(
   ],
 );
 
+export const fundHoldings = sqliteTable(
+  "fund_holdings",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    accountId: integer("account_id").notNull().references(() => accounts.id),
+    fundId: integer("fund_id").notNull().references(() => funds.id),
+    unitsOwned: real("units_owned").notNull(),
+    balanceAmount: real("balance_amount").notNull(),
+    allocationPercent: real("allocation_percent").notNull(),
+    asOf: text("as_of").notNull(),
+  },
+  (t) => [
+    index("ix_holdings_account").on(t.accountId),
+    index("ix_holdings_fund").on(t.fundId),
+  ],
+);
+
 export const optimizationSuggestions = sqliteTable(
   "optimization_suggestions",
   {

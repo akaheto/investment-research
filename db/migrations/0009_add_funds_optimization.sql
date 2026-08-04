@@ -31,6 +31,19 @@ CREATE TABLE IF NOT EXISTS fund_performance (
 CREATE INDEX ix_perf_fund ON fund_performance(fund_id);
 CREATE INDEX ix_perf_date ON fund_performance(as_of);
 
+CREATE TABLE IF NOT EXISTS fund_holdings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER NOT NULL REFERENCES accounts(id),
+  fund_id INTEGER NOT NULL REFERENCES funds(id),
+  units_owned REAL NOT NULL,
+  balance_amount REAL NOT NULL,
+  allocation_percent REAL NOT NULL,
+  as_of TEXT NOT NULL
+);
+
+CREATE INDEX ix_holdings_account ON fund_holdings(account_id);
+CREATE INDEX ix_holdings_fund ON fund_holdings(fund_id);
+
 CREATE TABLE IF NOT EXISTS optimization_suggestions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   account_id INTEGER NOT NULL REFERENCES accounts(id),

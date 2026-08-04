@@ -1,7 +1,8 @@
 "use server";
 
 import { db } from "@/db/client";
-import { funds, fundPerformance } from "@/db/schema";
+import { funds, fundPerformance, fundHoldings, accounts } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 interface FundData {
   fundName: string;
@@ -333,6 +334,71 @@ export async function seedTransamericaFunds(): Promise<{ ok: boolean; count?: nu
     return { ok: true, count, message: `Loaded ${count} funds into database` };
   } catch (error) {
     console.error("Failed to seed funds:", error);
+    return { ok: false, message: String(error) };
+  }
+}
+
+/**
+ * Load holdings for Main 403b account
+ * Data from user's account statement as of 07/31/2026
+ */
+export async function loadMainAccountHoldings(accountId: number): Promise<{
+  ok: boolean;
+  count?: number;
+  totalBalance?: number;
+  message?: string;
+}> {
+  try {
+    const now = new Date().toISOString();
+    const asOfDate = "2026-07-31";
+
+    // Holdings data for Main 403b account
+    const holdings = [
+      { fundName: "Vanguard Total Bond Market Index I", units: 7.764583318, balance: 73841.19, percent: 9.14 },
+      { fundName: "Dodge & Cox Stock X", units: 6.652695227, balance: 120546.84, percent: 14.93 },
+      { fundName: "Fidelity 500 Index Institutional Prem", units: 1083.195323, balance: 286212.69, percent: 35.44 },
+      { fundName: "Fidelity Extended Market Index", units: 707.127639, balance: 82203.59, percent: 10.18 },
+      { fundName: "Principal Global Real Estate Sec Inst", units: 3811.734151, balance: 40785.55, percent: 5.05 },
+      { fundName: "Fidelity International Index", units: 2986.097438, balance: 204069.89, percent: 25.27 },
+    ];
+
+    let totalBalance = 0;
+    let count = 0;
+
+    for (const holding of holdings) {
+      // Find the fund by name
+      const fund = await db
+        .select()
+        .from(funds)
+        .where(eq(funds.fundName, holding.fundName))
+        .limit(1);
+
+      if (fund.length === 0) {
+        console.warn(`Fund not found: ${holding.fundName}`);
+        continue;
+      }
+
+      // Insert holding
+      await db
+        .insert(fundHoldings)
+        .values({
+          accountId,
+          fundId: fund[0].id,
+          unitsOwned: holding.units,
+          balanceAmount: holding.balance,
+          allocationPercent: holding.percent,
+          asOf: asOfDate,
+        })
+        .onConflictDoNothing();
+
+      totalBalance += holding.balance;
+      count++;
+    }
+
+    console.log(`✓ Loaded ${count} holdings for account ${accountId}, total balance: $${totalBalance.toFixed(2)}`);
+    return { ok: true, count, totalBalance, message: `Loaded ${count} holdings, total balance: $${totalBalance.toFixed(2)}` };
+  } catch (error) {
+    console.error("Failed to load holdings:", error);
     return { ok: false, message: String(error) };
   }
 }

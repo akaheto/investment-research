@@ -25,25 +25,36 @@ export async function triggerManualRefresh() {
     console.log(`✓ Price refresh: ${prices.symbols} symbols, ${prices.observations} observations`);
 
     // 2. Compute factor scores
-    const scores = await computeScoresForWatchlist("balanced");
-    console.log(`✓ Scores computed: ${scores.count} instruments`);
+    let scoresCount = 0;
+    try {
+      const scores = await computeScoresForWatchlist("balanced");
+      scoresCount = scores.count;
+      console.log(`✓ Scores computed: ${scoresCount} instruments`);
+    } catch (scoreErr) {
+      console.warn("⚠️ Scores computation failed:", scoreErr);
+    }
 
     // 3. Fetch news for watchlist
-    const news = await fetchNewsForWatchlist();
-    const newsCount = (news as any).count || 0;
-    console.log(`✓ News fetched: ${newsCount} articles`);
+    let newsCount = 0;
+    try {
+      const news = await fetchNewsForWatchlist();
+      newsCount = (news as any).count || 0;
+      console.log(`✓ News fetched: ${newsCount} articles`);
+    } catch (newsErr) {
+      console.warn("⚠️ News fetch failed:", newsErr);
+    }
 
     logAuditEvent({
       eventType: "data_refresh",
       action: "Manual refresh completed",
       status: "success",
-      details: { prices, scores: scores.count, news: newsCount },
+      details: { prices, scores: scoresCount, news: newsCount },
     });
 
     return {
       ok: true,
-      message: `Refresh complete: ${prices.symbols} prices, ${scores.count} scores, ${newsCount} news items`,
-      result: { prices, scores, news },
+      message: `Refresh complete: ${prices.symbols} prices, ${scoresCount} scores, ${newsCount} news items`,
+      result: { prices, scoresCount, newsCount },
     };
   } catch (error) {
     logAuditEvent({

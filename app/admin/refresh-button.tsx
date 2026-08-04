@@ -13,13 +13,18 @@ export function RefreshButton() {
 
     try {
       const result = await triggerManualRefresh();
+      if (!result) {
+        setMessage("❌ Refresh failed: No response from server");
+        return;
+      }
       if (result.ok) {
         setMessage("✅ Refresh started. Check back in a minute for results.");
       } else {
-        setMessage(`❌ Refresh failed: ${result.error}`);
+        setMessage(`❌ Refresh failed: ${result.error || "Unknown error"}`);
       }
     } catch (err) {
-      setMessage(`❌ Error: ${String(err)}`);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setMessage(`❌ Error: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }

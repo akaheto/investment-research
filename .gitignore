@@ -49,3 +49,4 @@ next-env.d.ts
 .DS_Store
 Icon?
 !.env.example
+Investment Accounts/

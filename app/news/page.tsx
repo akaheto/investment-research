@@ -4,6 +4,8 @@ import { getLatestNews } from "./actions";
 import { analyzeSentiment, sentimentIcon } from "@/lib/sentiment/analyzer";
 import { formatTimeEST } from "@/lib/format-time";
 
+export const dynamic = "force-dynamic";
+
 /**
  * News page (server-side) — real headlines with sentiment analysis.
  * Fetches from newsItems table (populated by admin refresh).

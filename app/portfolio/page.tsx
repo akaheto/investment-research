@@ -6,6 +6,8 @@ import { db } from "@/db/client";
 import { accounts, fundHoldings, funds, optimizationSuggestions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 export default async function PortfolioPage() {
   // Fetch accounts with their holdings
   const allAccounts = await db.select().from(accounts);

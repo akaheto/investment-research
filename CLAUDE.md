@@ -89,6 +89,19 @@ execution against an established spec can run on a lighter/cheaper one.
   completion.
 - If verification is not possible for some reason, say so explicitly
   and explain why — don't silently skip it or imply it was done.
+- **For any bug fix, production validation is required, not optional.**
+  Local/dev passing does not count as "fixed." Before saying a bug is
+  fixed: (1) confirm the fix is actually deployed (check the deployed
+  commit SHA, not just that a push happened), (2) hit the real
+  production URL for the specific broken feature and confirm the
+  actual behavior — a fresh screenshot, curl status code, or runtime
+  log pulled after deployment, not a screenshot from earlier in the
+  conversation, (3) if a page/feature reports success by silently
+  falling back to empty data on error, that is NOT confirmation the
+  underlying bug is fixed — verify real data flows through, not just
+  that the page didn't crash. If production can't be checked yet
+  (deployment still building), say "not yet verified in production"
+  instead of "fixed," and follow up until it's actually confirmed.
 
 ## Honesty / uncertainty
 - Distinguish low-stakes assumptions from material ones. Low-stakes,

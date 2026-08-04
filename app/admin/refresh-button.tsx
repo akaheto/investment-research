@@ -14,17 +14,17 @@ export function RefreshButton() {
     try {
       const result = await triggerManualRefresh();
       if (!result) {
-        setMessage("❌ Refresh failed: No response from server");
-        return;
+        throw new Error("No response from server");
       }
-      if (result.ok) {
-        setMessage("✅ Refresh started. Check back in a minute for results.");
+      if (result.ok === true) {
+        setMessage(result.message || "✅ Refresh completed");
       } else {
-        setMessage(`❌ Refresh failed: ${result.error || "Unknown error"}`);
+        setMessage(result.message || "❌ Refresh failed");
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      setMessage(`❌ Error: ${errorMsg}`);
+      console.error("Refresh error:", err);
+      setMessage(`❌ ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }

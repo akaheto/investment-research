@@ -48,24 +48,23 @@ export async function triggerManualRefresh() {
       eventType: "data_refresh",
       action: "Manual refresh completed",
       status: "success",
-      details: { prices, scores: scoresCount, news: newsCount },
+      details: { prices: prices.symbols, scores: scoresCount, news: newsCount },
     });
 
-    return {
-      ok: true,
-      message: `Refresh complete: ${prices.symbols} prices, ${scoresCount} scores, ${newsCount} news items`,
-      result: { prices, scoresCount, newsCount },
-    };
+    const message = `✅ Refresh complete: ${prices.symbols} prices, ${scoresCount} scores, ${newsCount} news items`;
+    console.log(message);
+    return { ok: true, message };
   } catch (error) {
+    const errorMsg = String(error);
     logAuditEvent({
       eventType: "data_refresh",
       action: "Manual refresh failed",
       status: "failed",
-      details: { error: String(error) },
+      details: { error: errorMsg },
     });
 
     console.error("❌ Refresh failed:", error);
-    return { ok: false, error: String(error) };
+    return { ok: false, message: `❌ Refresh failed: ${errorMsg}` };
   }
 }
 

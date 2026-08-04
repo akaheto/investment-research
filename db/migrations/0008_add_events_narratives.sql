@@ -13,11 +13,11 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TEXT NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX ix_events_date ON events(event_date);
+CREATE INDEX IF NOT EXISTS ix_events_date ON events(event_date);
 --> statement-breakpoint
-CREATE INDEX ix_events_type ON events(event_type);
+CREATE INDEX IF NOT EXISTS ix_events_type ON events(event_type);
 --> statement-breakpoint
-CREATE INDEX ix_events_instrument ON events(instrument_id);
+CREATE INDEX IF NOT EXISTS ix_events_instrument ON events(instrument_id);
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS news_narratives (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,6 +28,6 @@ CREATE TABLE IF NOT EXISTS news_narratives (
   expires_at TEXT NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX ix_narratives_instrument ON news_narratives(instrument_id);
+CREATE INDEX IF NOT EXISTS ix_narratives_instrument ON news_narratives(instrument_id);
 --> statement-breakpoint
-CREATE INDEX ix_narratives_generated ON news_narratives(generated_at);
+CREATE INDEX IF NOT EXISTS ix_narratives_generated ON news_narratives(generated_at);

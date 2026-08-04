@@ -9,9 +9,12 @@ import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
 export function createDb(url?: string) {
+  const dbUrl = url || process.env.TURSO_DATABASE_URL?.trim() || "file:local.db";
+  const authToken = process.env.TURSO_AUTH_TOKEN?.trim();
+
   const client = createClient({
-    url: url ?? process.env.TURSO_DATABASE_URL ?? "file:local.db",
-    authToken: process.env.TURSO_AUTH_TOKEN,
+    url: dbUrl,
+    ...(authToken && { authToken }),
   });
   return drizzle(client, { schema });
 }

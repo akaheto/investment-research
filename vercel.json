@@ -1,0 +1,33 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "env": {
+    "FRED_API_KEY": {
+      "description": "FRED API key for macro data",
+      "required": true
+    },
+    "TURSO_DATABASE_URL": {
+      "description": "Turso database URL for libSQL",
+      "required": true
+    },
+    "TURSO_AUTH_TOKEN": {
+      "description": "Turso authentication token",
+      "required": true
+    },
+    "CRON_SECRET": {
+      "description": "Secret for verifying cron job requests",
+      "required": true
+    },
+    "EQUITY_PROVIDER": {
+      "description": "Primary equity data provider (yahoo|fmp)",
+      "required": false
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/refresh",
+      "schedule": "0 21 * * 1-5"
+    }
+  ]
+}

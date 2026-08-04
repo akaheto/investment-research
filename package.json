@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "gen:docs": "node scripts/gen-docs/project-plan.mjs && node scripts/gen-docs/technical-spec.mjs && node scripts/gen-docs/style-guide.mjs && node scripts/gen-docs/user-guide.mjs && node scripts/gen-docs/enhancements.mjs",
     "db:migrate": "node db/migrate.mjs",
     "db:generate": "drizzle-kit generate",
@@ -24,6 +25,7 @@
     "yahoo-finance2": "^4.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

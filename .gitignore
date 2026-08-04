@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local data & secrets
+*.db
+*.db-journal
+.env
+
+# macOS / Drive noise
+.DS_Store
+Icon?

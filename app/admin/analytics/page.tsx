@@ -15,12 +15,25 @@ export default async function AdminAnalyticsPage() {
   // Note: Mag 7 stocks are now manually added to watchlist, so automatic seed is disabled
   // await seedMag7();
 
-  const [apiStats, imports, events, cacheStats] = await Promise.all([
-    getApiStats(24),
-    getRecentImports(20),
-    getRecentEvents(20),
-    getCacheStats(),
-  ]);
+  let apiStats: Awaited<ReturnType<typeof getApiStats>> = { ok: false, byProvider: {}, totalCalls: 0 };
+  let imports: Awaited<ReturnType<typeof getRecentImports>> = { ok: false, imports: [] };
+  let events: Awaited<ReturnType<typeof getRecentEvents>> = { ok: false, events: [] };
+  let cacheStats: Awaited<ReturnType<typeof getCacheStats>> = { totalEntries: 0, fresh: 0, stale: 0, byType: {} };
+
+  try {
+    const results = await Promise.all([
+      getApiStats(24),
+      getRecentImports(20),
+      getRecentEvents(20),
+      getCacheStats(),
+    ]);
+    apiStats = results[0];
+    imports = results[1];
+    events = results[2];
+    cacheStats = results[3];
+  } catch (error) {
+    console.error("❌ Failed to load admin analytics:", error);
+  }
 
   return (
     <>

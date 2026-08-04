@@ -2,17 +2,30 @@ import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { RegimeDial } from "@/components/regime-dial";
 import { EventsWidget } from "@/app/components/events-widget";
-import { getMarketIndices, getYieldCurve, getTopCrypto, getMacroRegime } from "./actions";
+import { getMarketIndices, getYieldCurve, getTopCrypto, getMacroRegime, type MarketIndex, type YieldPoint, type CryptoQuote } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function MarketsPage() {
-  const [indices, yieldCurve, crypto, regime] = await Promise.all([
-    getMarketIndices(),
-    getYieldCurve(),
-    getTopCrypto(),
-    getMacroRegime(),
-  ]);
+  let indices: MarketIndex[] = [];
+  let yieldCurve: YieldPoint[] = [];
+  let crypto: CryptoQuote[] = [];
+  let regime: { yieldCurveSlope: number; creditSpread: number; realYield10y: number } = { yieldCurveSlope: 0, creditSpread: 350, realYield10y: 0 };
+
+  try {
+    const results = await Promise.all([
+      getMarketIndices(),
+      getYieldCurve(),
+      getTopCrypto(),
+      getMacroRegime(),
+    ]);
+    indices = results[0];
+    yieldCurve = results[1];
+    crypto = results[2];
+    regime = results[3];
+  } catch (error) {
+    console.error("❌ Failed to load market data:", error);
+  }
   return (
     <>
       <PageHeader title="Markets" caption="Indices, rates, and the macro regime" />

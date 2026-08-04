@@ -6,7 +6,7 @@
  */
 
 import { db } from "@/db/client";
-import { instruments, watchlist, pricesDaily } from "@/db/schema";
+import { instruments, watchlist, pricesDaily, factorScores } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export interface WatchlistQuote {
@@ -17,6 +17,11 @@ export interface WatchlistQuote {
   change: number;
   changePercent: number;
   asOf: string;
+  compositeScore?: number;
+  valuation?: number;
+  growth?: number;
+  quality?: number;
+  momentum?: number;
 }
 
 /**
@@ -61,6 +66,20 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
       const change = current - previous;
       const changePercent = previous > 0 ? (change / previous) * 100 : 0;
 
+      // Get latest factor scores
+      const scores = await db
+        .select()
+        .from(factorScores)
+        .where(eq(factorScores.instrumentId, item.id))
+        .orderBy(desc(factorScores.runAt));
+
+      const scoresByFactor: Record<string, number> = {};
+      for (const score of scores) {
+        if (!scoresByFactor[score.factor]) {
+          scoresByFactor[score.factor] = score.percentile;
+        }
+      }
+
       results.push({
         id: item.id,
         symbol: item.symbol,
@@ -69,6 +88,11 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
         change,
         changePercent,
         asOf: latestPrice[0].asOf,
+        compositeScore: scoresByFactor["composite"],
+        valuation: scoresByFactor["valuation"],
+        growth: scoresByFactor["growth"],
+        quality: scoresByFactor["quality"],
+        momentum: scoresByFactor["momentum"],
       });
     }
   }

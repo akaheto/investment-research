@@ -9,15 +9,15 @@ import { addToWatchlist, removeFromWatchlist, getWatchlistWithQuotes } from "./a
 import type { WatchlistQuote } from "./actions";
 
 /**
- * Watchlist page — real quotes from database, live add/remove.
- * Fetches prices from prices_daily table (populated by /api/test/refresh).
+ * Watchlist page — real quotes from database with factor scores.
+ * Use Admin > Refresh to fetch live data from providers.
  */
 
 export default function WatchlistPage() {
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<WatchlistQuote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   // Load watchlist on mount
   useEffect(() => {
@@ -33,35 +33,25 @@ export default function WatchlistPage() {
 
   async function handleAdd() {
     if (!search.trim()) return;
-    setRefreshing(true);
+    setAdding(true);
     const result = await addToWatchlist(search.toUpperCase());
     if (result.ok) {
       setSearch("");
       await loadWatchlist();
-      // Trigger refresh to fetch real quotes
-      await fetch("/api/test/refresh", { method: "POST" });
-      await loadWatchlist();
     }
-    setRefreshing(false);
+    setAdding(false);
   }
 
   async function handleRemove(instrumentId: number) {
-    setRefreshing(true);
+    setAdding(true);
     await removeFromWatchlist(instrumentId);
     await loadWatchlist();
-    setRefreshing(false);
-  }
-
-  async function handleRefresh() {
-    setRefreshing(true);
-    await fetch("/api/test/refresh", { method: "POST" });
-    await loadWatchlist();
-    setRefreshing(false);
+    setAdding(false);
   }
 
   return (
     <>
-      <PageHeader title="Watchlist" caption="Live quotes, real data from providers" />
+      <PageHeader title="Watchlist" caption="Real quotes, factor scores from Admin refresh" />
 
       <div className="mb-4 flex gap-2">
         <Input
@@ -69,13 +59,10 @@ export default function WatchlistPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-          disabled={refreshing}
+          disabled={adding}
         />
-        <Button onClick={handleAdd} disabled={refreshing}>
+        <Button onClick={handleAdd} disabled={adding}>
           Add
-        </Button>
-        <Button variant="secondary" onClick={handleRefresh} disabled={refreshing}>
-          {refreshing ? "Refreshing..." : "Refresh"}
         </Button>
       </div>
 
@@ -93,9 +80,12 @@ export default function WatchlistPage() {
                 <tr className="border-b border-hairline text-left">
                   <th className="px-4 py-2 font-semibold text-ink-2">Symbol</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Price</th>
-                  <th className="px-4 py-2 text-right font-semibold text-ink-2">Change</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Change %</th>
-                  <th className="px-4 py-2 text-right font-semibold text-ink-2">As Of</th>
+                  <th className="px-4 py-2 text-right font-semibold text-ink-2">Score</th>
+                  <th className="px-4 py-2 text-right font-semibold text-ink-2 text-xs">Val</th>
+                  <th className="px-4 py-2 text-right font-semibold text-ink-2 text-xs">Grw</th>
+                  <th className="px-4 py-2 text-right font-semibold text-ink-2 text-xs">Qal</th>
+                  <th className="px-4 py-2 text-right font-semibold text-ink-2 text-xs">Mom</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -105,26 +95,33 @@ export default function WatchlistPage() {
                     <td className="px-4 py-2 font-mono font-semibold text-accent">{item.symbol}</td>
                     <td className="px-4 py-2 text-right text-ink">${item.price.toFixed(2)}</td>
                     <td
-                      className={`px-4 py-2 text-right font-mono ${
-                        item.change >= 0 ? "text-gain" : "text-loss"
-                      }`}
-                    >
-                      {item.change >= 0 ? "+" : ""}{item.change.toFixed(2)}
-                    </td>
-                    <td
-                      className={`px-4 py-2 text-right font-mono ${
+                      className={`px-4 py-2 text-right font-mono text-sm ${
                         item.changePercent >= 0 ? "text-gain" : "text-loss"
                       }`}
                     >
-                      {item.changePercent >= 0 ? "+" : ""}{item.changePercent.toFixed(2)}%
+                      {item.changePercent >= 0 ? "+" : ""}{item.changePercent.toFixed(1)}%
                     </td>
-                    <td className="px-4 py-2 text-right text-muted text-xs">{item.asOf}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-accent">
+                      {item.compositeScore ? item.compositeScore.toFixed(0) : "–"}
+                    </td>
+                    <td className="px-4 py-2 text-right text-muted text-xs">
+                      {item.valuation ? item.valuation.toFixed(0) : "–"}
+                    </td>
+                    <td className="px-4 py-2 text-right text-muted text-xs">
+                      {item.growth ? item.growth.toFixed(0) : "–"}
+                    </td>
+                    <td className="px-4 py-2 text-right text-muted text-xs">
+                      {item.quality ? item.quality.toFixed(0) : "–"}
+                    </td>
+                    <td className="px-4 py-2 text-right text-muted text-xs">
+                      {item.momentum ? item.momentum.toFixed(0) : "–"}
+                    </td>
                     <td className="px-4 py-2 text-right">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRemove(item.id)}
-                        disabled={refreshing}
+                        disabled={adding}
                       >
                         ✕
                       </Button>

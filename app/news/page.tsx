@@ -2,6 +2,7 @@ import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { getLatestNews } from "./actions";
 import { analyzeSentiment, sentimentIcon } from "@/lib/sentiment/analyzer";
+import { formatTimeEST } from "@/lib/format-time";
 
 /**
  * News page (server-side) — real headlines with sentiment analysis.
@@ -38,7 +39,7 @@ export default async function NewsPage() {
                         <div className="font-semibold text-sm text-ink truncate">{item.title}</div>
                         <div className="text-xs text-muted mt-1">
                           {item.source} •{" "}
-                          {new Date(item.publishedAt as string).toLocaleDateString()}
+                          {formatTimeEST(item.publishedAt as string)} EST
                         </div>
                         {item.tickersCsv && (
                           <div className="flex gap-1 mt-2 flex-wrap">

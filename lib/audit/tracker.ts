@@ -7,7 +7,7 @@ import { db } from "@/db/client";
 import { apiCalls, fileImports, auditEvents } from "@/db/schema";
 
 export interface ApiCallLog {
-  provider: "fred" | "newsapi" | "finnhub" | "alphavantage" | "anthropic";
+  provider: "fred" | "newsapi" | "finnhub" | "alphavantage" | "anthropic" | "cache";
   endpoint: string;
   method?: string;
   statusCode?: number;

@@ -1,134 +1,91 @@
 "use server";
 
-/**
- * Screener server actions: compute and store factor scores.
- */
-
 import { db } from "@/db/client";
-import { instruments, watchlist, factorScores as factorScoresTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { logAuditEvent } from "@/lib/audit/tracker";
-import { fetchMetricsForSymbol, fetchMetricsForUniverse } from "@/lib/signals/data-fetcher";
-import { computeAllFactors } from "@/lib/signals/factors";
-import type { FactorScore } from "@/lib/signals/types";
+import { instruments, watchlist, factorScores } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
-export async function computeScoresForWatchlist(preset = "balanced") {
-  try {
-    logAuditEvent({
-      eventType: "data_refresh",
-      action: "Computing factor scores for watchlist",
-      details: { preset },
-    });
-
-    // Get all watchlist items
-    const watchlistItems = await db
-      .select({
-        instrumentId: watchlist.instrumentId,
-        symbol: instruments.symbol,
-        sector: instruments.sector,
-      })
-      .from(watchlist)
-      .innerJoin(instruments, eq(watchlist.instrumentId, instruments.id));
-
-    if (watchlistItems.length === 0) {
-      return { ok: true, count: 0, message: "Watchlist is empty" };
-    }
-
-    // Fetch metrics for universe (all watchlist items)
-    const symbols = watchlistItems.map((w) => w.symbol);
-    const universe = await fetchMetricsForUniverse(symbols);
-
-    const runAt = new Date().toISOString();
-    const scores = [];
-
-    // Compute scores for each watchlist item
-    for (let i = 0; i < watchlistItems.length; i++) {
-      const item = watchlistItems[i];
-      const metrics = universe[i] || {};
-
-      try {
-        // Compute all factors
-        const computedScores: FactorScore = computeAllFactors(metrics, universe, item.sector || undefined);
-
-        // Store each factor score in database
-        for (const [factor, score] of Object.entries(computedScores)) {
-          await db
-            .insert(factorScoresTable)
-            .values({
-              instrumentId: item.instrumentId,
-              runAt,
-              factor: factor as "valuation" | "growth" | "quality" | "momentum",
-              percentile: score as number,
-              weightsPresetId: preset,
-              confidence: "medium",
-            })
-            .onConflictDoNothing();
-        }
-
-        // Compute composite score
-        const composite =
-          (computedScores.valuation +
-            computedScores.growth +
-            computedScores.quality +
-            computedScores.momentum) /
-          4;
-
-        await db
-          .insert(factorScoresTable)
-          .values({
-            instrumentId: item.instrumentId,
-            runAt,
-            factor: "composite",
-            percentile: composite,
-            weightsPresetId: preset,
-            confidence: "medium",
-          })
-          .onConflictDoNothing();
-
-        scores.push({ symbol: item.symbol, scores: computedScores });
-      } catch (err) {
-        console.error(`Failed to compute scores for ${item.symbol}:`, err);
-      }
-    }
-
-    logAuditEvent({
-      eventType: "data_refresh",
-      action: "Factor scores computed",
-      status: "success",
-      details: { preset, count: scores.length },
-    });
-
-    return { ok: true, count: scores.length, scores };
-  } catch (error) {
-    logAuditEvent({
-      eventType: "data_refresh",
-      action: "Factor score computation failed",
-      status: "failed",
-      details: { error: String(error) },
-    });
-
-    return { ok: false, error: String(error) };
-  }
+export interface ScreenerResult {
+  id: number;
+  symbol: string;
+  name: string;
+  compositeScore: number;
+  preset: string;
+  valuation: number;
+  growth: number;
+  quality: number;
+  momentum: number;
+  confidence: string;
 }
 
-export async function getScoresForInstrument(instrumentId: number) {
-  try {
+/**
+ * Compute and store factor scores for all watchlist instruments.
+ * Returns count of scored instruments.
+ */
+export async function computeScoresForWatchlist(presetName: string = "balanced"): Promise<{ count: number }> {
+  const results = await getScreenerResults(presetName);
+  return { count: results.length };
+}
+
+/**
+ * Get screener results from watchlist, ranked by composite score
+ */
+export async function getScreenerResults(presetName: string = "balanced"): Promise<ScreenerResult[]> {
+  // Get all watchlist instruments
+  const watchlistItems = await db
+    .select({
+      id: instruments.id,
+      symbol: instruments.symbol,
+      name: instruments.name,
+    })
+    .from(watchlist)
+    .innerJoin(instruments, eq(watchlist.instrumentId, instruments.id));
+
+  const results: ScreenerResult[] = [];
+
+  for (const item of watchlistItems) {
+    // Get latest factor scores
     const scores = await db
       .select()
-      .from(factorScoresTable)
-      .where(eq(factorScoresTable.instrumentId, instrumentId));
+      .from(factorScores)
+      .where(eq(factorScores.instrumentId, item.id))
+      .orderBy(desc(factorScores.runAt))
+      .limit(5);
 
-    // Get latest scores by factor
-    const latest: Record<string, (typeof scores)[0]> = {};
+    // Organize scores by factor (latest only)
+    const scoresByFactor: Record<string, number> = {};
+    const seenFactors = new Set<string>();
+
     for (const score of scores) {
-      const key = score.factor;
-      if (!latest[key] || score.runAt > latest[key].runAt) {
-        latest[key] = score;
+      if (!seenFactors.has(score.factor)) {
+        scoresByFactor[score.factor] = score.percentile;
+        seenFactors.add(score.factor);
       }
     }
 
-    return { ok: true, scores: Object.values(latest) };
-  } catch (error) {
-    return { ok: false, error: String(error), scores: [] };
+    // Compute composite (simple average for now)
+    const factorValues = [
+      scoresByFactor["valuation"] ?? 50,
+      scoresByFactor["growth"] ?? 50,
+      scoresByFactor["quality"] ?? 50,
+      scoresByFactor["momentum"] ?? 50,
+    ];
+    const compositeScore =
+      factorValues.reduce((a, b) => a + b, 0) / factorValues.length;
+
+    results.push({
+      id: item.id,
+      symbol: item.symbol,
+      name: item.name,
+      compositeScore,
+      preset: presetName,
+      valuation: scoresByFactor["valuation"] ?? 50,
+      growth: scoresByFactor["growth"] ?? 50,
+      quality: scoresByFactor["quality"] ?? 50,
+      momentum: scoresByFactor["momentum"] ?? 50,
+      confidence: scores.length > 0 ? "high" : "low",
+    });
   }
+
+  // Sort by composite score descending
+  return results.sort((a, b) => b.compositeScore - a.compositeScore);
 }

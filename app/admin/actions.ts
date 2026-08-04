@@ -8,6 +8,7 @@ import { logAuditEvent } from "@/lib/audit/tracker";
 import { runRefresh } from "@/lib/refresh";
 import { computeScoresForWatchlist } from "@/app/screener/actions";
 import { fetchNewsForWatchlist } from "@/app/news/actions";
+import { getCacheStats, clearExpiredCache } from "@/lib/cache/provider-cache";
 
 export async function triggerManualRefresh() {
   try {
@@ -53,5 +54,30 @@ export async function triggerManualRefresh() {
 
     console.error("❌ Refresh failed:", error);
     return { ok: false, error: String(error) };
+  }
+}
+
+export async function getCacheStatus() {
+  try {
+    const stats = await getCacheStats();
+    return { ok: true, stats };
+  } catch (err) {
+    console.error("Failed to get cache stats:", err);
+    return { ok: false, error: String(err) };
+  }
+}
+
+export async function clearStaleCache() {
+  try {
+    const cleared = await clearExpiredCache();
+    logAuditEvent({
+      eventType: "data_refresh",
+      action: "Cleared expired cache entries",
+      details: { cleared },
+    });
+    return { ok: true, cleared };
+  } catch (err) {
+    console.error("Failed to clear cache:", err);
+    return { ok: false, error: String(err) };
   }
 }

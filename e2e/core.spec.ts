@@ -66,20 +66,15 @@ test("Navigation works across all pages", async ({ page }) => {
 test("Theme toggle preserves across navigation", async ({ page }) => {
   await page.goto("/");
 
-  const html = page.locator("html");
-
   // Toggle theme if button exists
   const themeButton = page.locator("button").last(); // Theme toggle usually at bottom
   if (await themeButton.isVisible()) {
-    const initialClass = await html.getAttribute("class");
     await themeButton.click();
 
     // Navigate to different page
     await page.click("text=Watchlist");
 
     // Check theme persisted
-    const newClass = await html.getAttribute("class");
-    // Theme should persist or toggle button should still be functional
     const toggleButton = page.locator("button").last();
     await expect(toggleButton).toBeVisible();
   }

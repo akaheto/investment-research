@@ -1,18 +1,24 @@
 import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { RefreshButton } from "../refresh-button";
-import { SeedButton } from "../seed-button";
 import { getApiStats, getRecentImports, getRecentEvents } from "@/lib/audit/tracker";
+import { getCacheStats } from "@/lib/cache/provider-cache";
+import { seedMag7 } from "../seed-action";
+import { formatTimeEST } from "@/lib/format-time";
 
 /**
- * Admin Analytics — API usage, imports, system health.
+ * Admin Analytics — API usage, imports, system health, cache status.
  */
 
 export default async function AdminAnalyticsPage() {
-  const [apiStats, imports, events] = await Promise.all([
+  // Seed Mag 7 stocks on first load (idempotent, skips if already seeded)
+  await seedMag7();
+
+  const [apiStats, imports, events, cacheStats] = await Promise.all([
     getApiStats(24),
     getRecentImports(20),
     getRecentEvents(20),
+    getCacheStats(),
   ]);
 
   return (
@@ -23,10 +29,6 @@ export default async function AdminAnalyticsPage() {
         <Card title="System Control" className="col-span-12">
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-muted mb-2">Seed Mag 7 stocks (AAPL, MSFT, GOOGL, AMZN, TSLA, META, NVDA):</p>
-              <SeedButton />
-            </div>
-            <div className="border-t border-hairline pt-4">
               <p className="text-sm text-muted mb-2">
                 Cron job runs daily at 3:00 AM UTC. Trigger manual refresh below:
               </p>
@@ -37,8 +39,43 @@ export default async function AdminAnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-4">
+        {/* Cache Status */}
+        <Card title="Provider Cache" className="col-span-12 lg:col-span-4">
+          <div className="space-y-3 text-sm">
+            <div>
+              <div className="text-muted mb-1">Total Entries</div>
+              <div className="text-lg font-semibold text-ink">{cacheStats.totalEntries}</div>
+            </div>
+            <div className="border-t border-hairline pt-3">
+              <div className="flex justify-between mb-2">
+                <span className="text-muted">Fresh (recent)</span>
+                <span className="font-semibold text-gain">{cacheStats.fresh}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Stale (expired)</span>
+                <span className={cacheStats.stale > 0 ? "font-semibold text-loss" : "text-muted"}>
+                  {cacheStats.stale}
+                </span>
+              </div>
+            </div>
+            {Object.entries(cacheStats.byType).length > 0 && (
+              <div className="border-t border-hairline pt-3">
+                <div className="text-xs text-muted mb-2 font-semibold">By Type</div>
+                {Object.entries(cacheStats.byType).map(([type, stats]) => (
+                  <div key={type} className="flex justify-between text-xs mb-1">
+                    <span className="text-muted capitalize">{type}</span>
+                    <span>
+                      {stats.fresh}/{stats.count} fresh
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+
         {/* API Usage by Provider */}
-        <Card title="API Calls (Last 24h)" className="col-span-12 lg:col-span-6">
+        <Card title="API Calls (Last 24h)" className="col-span-12 lg:col-span-4">
           {apiStats.ok && Object.keys(apiStats.byProvider).length > 0 ? (
             <div className="space-y-3">
               <div className="flex justify-between text-sm text-muted mb-3">
@@ -65,7 +102,7 @@ export default async function AdminAnalyticsPage() {
         </Card>
 
         {/* Recent Imports */}
-        <Card title="File Imports" className="col-span-12 lg:col-span-6">
+        <Card title="File Imports" className="col-span-12 lg:col-span-4">
           {imports.ok && imports.imports.length > 0 ? (
             <div className="space-y-3">
               {imports.imports.map((imp, i) => (
@@ -74,7 +111,7 @@ export default async function AdminAnalyticsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold truncate">{imp.filename}</div>
                       <div className="text-xs text-muted mt-0.5">
-                        {new Date(imp.timestamp).toLocaleString()}
+                        {formatTimeEST(imp.timestamp)} EST
                       </div>
                     </div>
                     <span
@@ -113,7 +150,7 @@ export default async function AdminAnalyticsPage() {
                         <span className="capitalize inline-block bg-surface px-2 py-0.5 rounded mr-2">
                           {evt.eventType}
                         </span>
-                        {new Date(evt.timestamp).toLocaleString()}
+                        {formatTimeEST(evt.timestamp)} EST
                       </div>
                     </div>
                     <span

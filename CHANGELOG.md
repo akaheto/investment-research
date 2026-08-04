@@ -4,6 +4,19 @@ All notable changes to this project. One entry per deliverable.
 
 ## [Unreleased]
 
+### 2026-08-04
+
+- **B-Cache** — Provider caching layer: `lib/cache/provider-cache.ts`
+  implements TTL-based response caching (quotes 15m, fundamentals 24h, macro
+  1h, technicals 4h) in SQLite provider_cache table. Wrapped via
+  `lib/cache/cached-providers.ts`; transparent to the app with
+  DISABLE_CACHE=1 override. Admin analytics now displays cache stats (total
+  entries, fresh/stale counts, by-type breakdown). Reduces API call volume
+  while maintaining data freshness. Tests 35/35 ✓, build ✓, lint ✓.
+- **B-Admin** — Cache management actions in `app/admin/actions.ts`:
+  getCacheStatus() and clearStaleCache(); integrated into Admin Analytics
+  page alongside API usage and system events monitoring.
+
 ### 2026-08-03
 
 - **A1/A2** — Project goal, scope, and stack confirmed: free-tier data

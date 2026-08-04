@@ -3,6 +3,7 @@
  * Each PROVIDER env var can be a single provider or a pipe-separated list
  * for fallback: "primary|fallback|fallback".
  * Example: EQUITY_PROVIDER="fmp|yahoo" tries FMP first, falls back to Yahoo.
+ * Providers are automatically wrapped with caching (quotes 15min, fundamentals 24h).
  */
 import { type EquityProvider, type FundamentalsProvider, ProviderError } from "./types";
 import { YahooEquityProvider } from "./yahoo";
@@ -10,6 +11,7 @@ import { CoinGeckoCryptoProvider } from "./coingecko";
 import { FredMacroProvider, type MacroProvider } from "./fred";
 import { FinnhubProvider } from "./finnhub";
 import { alphaVantageProvider } from "./alphavantage";
+import { withCachedQuotes, withCachedFundamentals } from "@/lib/cache/cached-providers";
 
 const equityProviders: Record<string, () => EquityProvider> = {
   yahoo: () => new YahooEquityProvider(),
@@ -40,7 +42,10 @@ export function getEquityProvider(): EquityProvider {
   const list = (process.env.EQUITY_PROVIDER ?? "yahoo").split("|");
   for (const key of list) {
     const factory = equityProviders[key.trim()];
-    if (factory) return factory();
+    if (factory) {
+      const provider = factory();
+      return process.env.DISABLE_CACHE ? provider : withCachedQuotes(provider);
+    }
   }
   throw new ProviderError(
     `No known EQUITY_PROVIDER in "${list.join("|")}" — known: ${Object.keys(equityProviders).join(", ")}`,
@@ -52,7 +57,10 @@ export function getCryptoProvider(): EquityProvider {
   const list = (process.env.CRYPTO_PROVIDER ?? "coingecko").split("|");
   for (const key of list) {
     const factory = cryptoProviders[key.trim()];
-    if (factory) return factory();
+    if (factory) {
+      const provider = factory();
+      return process.env.DISABLE_CACHE ? provider : withCachedQuotes(provider);
+    }
   }
   throw new ProviderError(
     `No known CRYPTO_PROVIDER in "${list.join("|")}" — known: ${Object.keys(cryptoProviders).join(", ")}`,
@@ -76,7 +84,10 @@ export function getFundamentalsProvider(): FundamentalsProvider {
   const list = (process.env.FUNDAMENTALS_PROVIDER ?? "finnhub").split("|");
   for (const key of list) {
     const factory = fundamentalsProviders[key.trim()];
-    if (factory) return factory();
+    if (factory) {
+      const provider = factory();
+      return process.env.DISABLE_CACHE ? provider : withCachedFundamentals(provider);
+    }
   }
   throw new ProviderError(
     `No known FUNDAMENTALS_PROVIDER in "${list.join("|")}" — known: ${Object.keys(fundamentalsProviders).join(", ")}`,

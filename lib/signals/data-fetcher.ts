@@ -15,7 +15,7 @@ export async function fetchMetricsForSymbol(symbol: string, sector?: string): Pr
     const finnhub = getFundamentalsProvider();
     const startTime = Date.now();
 
-    const finnhubMetrics = (await finnhub.getMetrics(symbol)) as any;
+    const finnhubMetrics = (await finnhub.getMetrics(symbol)) as Record<string, unknown>;
     const duration = Date.now() - startTime;
 
     if (finnhubMetrics) {
@@ -27,9 +27,9 @@ export async function fetchMetricsForSymbol(symbol: string, sector?: string): Pr
         recordsReturned: 1,
       });
 
-      metrics.peRatio = finnhubMetrics?.peRatio;
-      metrics.priceToBook = finnhubMetrics?.pbRatio;
-      metrics.roe = finnhubMetrics?.roe;
+      metrics.peRatio = (finnhubMetrics?.peRatio as number | undefined) || undefined;
+      metrics.priceToBook = (finnhubMetrics?.pbRatio as number | undefined) || undefined;
+      metrics.roe = (finnhubMetrics?.roe as number | undefined) || undefined;
       metrics.debtToEquity = undefined; // TODO: Add to Finnhub provider
     }
 

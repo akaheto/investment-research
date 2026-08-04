@@ -19,7 +19,9 @@ export function SeedButton() {
         setMessage(`❌ Seed failed: ${result.error}`);
       }
     } catch (err) {
-      setMessage(`❌ Error: ${String(err)}`);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error('Seed error:', err);
+      setMessage(`❌ Error: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }

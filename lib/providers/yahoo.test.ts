@@ -24,6 +24,7 @@ const fakeClient = (overrides: Partial<YahooClient> = {}): YahooClient => ({
       { date: new Date("2026-08-03T13:30:00Z"), open: 310, high: 314, low: 309.5, close: 312.4, volume: 2.8e6 },
     ],
   }),
+  search: vi.fn().mockResolvedValue({ quotes: [] }),
   ...overrides,
 });
 
@@ -79,6 +80,78 @@ describe("YahooEquityProvider.getDailyHistory", () => {
     const err = await provider.getDailyHistory("NOPE", { from: "2026-01-01" }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ProviderError);
     expect((err as ProviderError).symbol).toBe("NOPE");
+  });
+});
+
+describe("YahooEquityProvider.searchSymbol", () => {
+  // Happy path: a company name resolves to its real ticker
+  it("resolves a company name to its symbol", async () => {
+    const provider = new YahooEquityProvider(
+      fakeClient({
+        search: vi.fn().mockResolvedValue({
+          quotes: [
+            { symbol: "TSLA", longname: "Tesla, Inc.", quoteType: "EQUITY", score: 9000, isYahooFinance: true },
+            { symbol: "TSLA.MX", longname: "Tesla, Inc.", quoteType: "EQUITY", score: 100, isYahooFinance: true },
+          ],
+        }),
+      }),
+    );
+    const match = await provider.searchSymbol("Tesla");
+    expect(match).toEqual({ symbol: "TSLA", name: "Tesla, Inc.", assetClass: "stock" });
+  });
+
+  // A literal ticker input should prefer the exact match over a higher-scored non-exact result
+  it("prefers an exact symbol match over search score", async () => {
+    const provider = new YahooEquityProvider(
+      fakeClient({
+        search: vi.fn().mockResolvedValue({
+          quotes: [
+            { symbol: "AAPL3.SA", longname: "Apple Inc (Brazil)", quoteType: "EQUITY", score: 9999, isYahooFinance: true },
+            { symbol: "AAPL", longname: "Apple Inc.", quoteType: "EQUITY", score: 50, isYahooFinance: true },
+          ],
+        }),
+      }),
+    );
+    const match = await provider.searchSymbol("AAPL");
+    expect(match?.symbol).toBe("AAPL");
+  });
+
+  it("ignores non-equity/ETF/index results (options, currencies, crunchbase entries)", async () => {
+    const provider = new YahooEquityProvider(
+      fakeClient({
+        search: vi.fn().mockResolvedValue({
+          quotes: [
+            { index: "quotes", isYahooFinance: false, name: "Tesla Motors Club", permalink: "x" },
+            { symbol: "TSLA250101C00100000", quoteType: "OPTION", score: 500, isYahooFinance: true },
+          ],
+        }),
+      }),
+    );
+    expect(await provider.searchSymbol("Tesla")).toBeNull();
+  });
+
+  // Unhappy path: nothing matched at all
+  it("returns null when the search has no quote results", async () => {
+    const provider = new YahooEquityProvider(fakeClient({ search: vi.fn().mockResolvedValue({ quotes: [] }) }));
+    expect(await provider.searchSymbol("asdkjaskdj")).toBeNull();
+  });
+
+  // Unhappy path: blank input never hits the network
+  it("returns null for blank input without calling the client", async () => {
+    const client = fakeClient();
+    const provider = new YahooEquityProvider(client);
+    expect(await provider.searchSymbol("   ")).toBeNull();
+    expect(client.search).not.toHaveBeenCalled();
+  });
+
+  // Unhappy path: transport failure wraps into ProviderError
+  it("wraps search failures in ProviderError", async () => {
+    const provider = new YahooEquityProvider(
+      fakeClient({ search: vi.fn().mockRejectedValue(new Error("boom")) }),
+    );
+    const err = await provider.searchSymbol("Tesla").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ProviderError);
+    expect((err as ProviderError).provider).toBe("yahoo");
   });
 });
 

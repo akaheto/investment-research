@@ -8,6 +8,7 @@
 import { db } from "@/db/client";
 import { instruments, watchlist, pricesDaily, factorScores } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
+import { getEquityProvider } from "@/lib/providers";
 
 export interface WatchlistQuote {
   id: number;
@@ -146,12 +147,39 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
 }
 
 /**
- * Add instrument to watchlist.
+ * Add an instrument to the watchlist. Accepts either a real ticker (AAPL)
+ * or free text (Apple, Tesla) — resolves free text to a real symbol via the
+ * equity provider's search before ever touching the database, so garbage
+ * input never becomes a fake "instrument".
  */
-export async function addToWatchlist(symbol: string) {
+export async function addToWatchlist(rawInput: string) {
   try {
-    // Find or create instrument
-    const existing = await db.select().from(instruments).where(eq(instruments.symbol, symbol));
+    const trimmed = rawInput.trim();
+    if (!trimmed) {
+      return { ok: false, error: "Enter a symbol or company name." };
+    }
+
+    // Fast path: already-known symbol in our DB, no network round trip needed.
+    const upperInput = trimmed.toUpperCase();
+    const existingExact = await db.select().from(instruments).where(eq(instruments.symbol, upperInput));
+
+    let match: { symbol: string; name: string; assetClass: string };
+    if (existingExact.length > 0) {
+      match = existingExact[0];
+    } else {
+      const provider = getEquityProvider();
+      if (!provider.searchSymbol) {
+        return { ok: false, error: `Could not verify "${trimmed}" — symbol search unavailable.` };
+      }
+      const resolved = await provider.searchSymbol(trimmed);
+      if (!resolved) {
+        return { ok: false, error: `No matching stock found for "${trimmed}".` };
+      }
+      match = resolved;
+    }
+
+    // Find or create the instrument for the resolved (real) symbol.
+    const existing = await db.select().from(instruments).where(eq(instruments.symbol, match.symbol));
 
     let instrumentId: number;
     if (existing.length > 0) {
@@ -160,9 +188,9 @@ export async function addToWatchlist(symbol: string) {
       const result = await db
         .insert(instruments)
         .values({
-          symbol,
-          name: symbol,
-          assetClass: "stock",
+          symbol: match.symbol,
+          name: match.name,
+          assetClass: match.assetClass,
           currency: "USD",
           active: true,
         })
@@ -170,13 +198,19 @@ export async function addToWatchlist(symbol: string) {
       instrumentId = result[0].id;
     }
 
-    // Add to watchlist
+    // Don't add the same instrument to the watchlist twice (e.g. "Tesla"
+    // then later "TSLA" both resolve to the same instrument).
+    const alreadyWatched = await db.select().from(watchlist).where(eq(watchlist.instrumentId, instrumentId));
+    if (alreadyWatched.length > 0) {
+      return { ok: true, instrumentId, symbol: match.symbol };
+    }
+
     await db.insert(watchlist).values({
       instrumentId,
       addedAt: new Date().toISOString(),
     });
 
-    return { ok: true, instrumentId };
+    return { ok: true, instrumentId, symbol: match.symbol };
   } catch (error) {
     console.error("Error adding to watchlist:", error);
     return { ok: false, error: String(error) };

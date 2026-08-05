@@ -19,6 +19,7 @@ export default function WatchlistPage() {
   const [items, setItems] = useState<WatchlistQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   // Load watchlist on mount
   useEffect(() => {
@@ -35,10 +36,15 @@ export default function WatchlistPage() {
   async function handleAdd() {
     if (!search.trim()) return;
     setAdding(true);
-    const result = await addToWatchlist(search.toUpperCase());
+    setAddError(null);
+    // Not uppercased here — company-name input (e.g. "Tesla") needs its
+    // casing intact for the provider's search to resolve it correctly.
+    const result = await addToWatchlist(search);
     if (result.ok) {
       setSearch("");
       await loadWatchlist();
+    } else {
+      setAddError(result.error ?? "Could not add that symbol.");
     }
     setAdding(false);
   }
@@ -54,17 +60,23 @@ export default function WatchlistPage() {
     <>
       <PageHeader title="Watchlist" caption="Real quotes, factor scores from Admin refresh" />
 
-      <div className="mb-4 flex gap-2">
-        <Input
-          placeholder="Symbol (e.g. AAPL, MSFT)"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-          disabled={adding}
-        />
-        <Button onClick={handleAdd} disabled={adding}>
-          Add
-        </Button>
+      <div className="mb-4">
+        <div className="flex gap-2">
+          <Input
+            placeholder="Symbol or company name (e.g. AAPL or Apple)"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setAddError(null);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            disabled={adding}
+          />
+          <Button onClick={handleAdd} disabled={adding}>
+            Add
+          </Button>
+        </div>
+        {addError && <div className="mt-1 text-sm text-loss">{addError}</div>}
       </div>
 
       <Card>

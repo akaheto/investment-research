@@ -34,12 +34,25 @@ export interface HistoryRange {
   to?: string;
 }
 
+export interface SymbolMatch {
+  symbol: string;
+  name: string;
+  /** 'stock' | 'etf' | 'index' — mapped from the provider's own instrument type. */
+  assetClass: string;
+}
+
 export interface EquityProvider {
   readonly name: string;
   /** Batch quote lookup. Empty input → empty output, no network call. */
   getQuotes(symbols: string[]): Promise<Quote[]>;
   /** Daily OHLCV bars, oldest first. */
   getDailyHistory(symbol: string, range: HistoryRange): Promise<PriceBar[]>;
+  /**
+   * Resolve free-text input (a ticker or a company name) to a real tradeable
+   * symbol. Returns the best match, or null if nothing matched. Optional —
+   * not every provider (e.g. crypto) needs this.
+   */
+  searchSymbol?(query: string): Promise<SymbolMatch | null>;
 }
 
 export interface FundamentalsProvider {

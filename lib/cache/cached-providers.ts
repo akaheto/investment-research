@@ -39,6 +39,13 @@ export function withCachedQuotes(provider: EquityProvider): EquityProvider {
         provider.getDailyHistory(symbol, range),
       );
     },
+
+    // Not wrapped with caching — infrequent, user-triggered, and results
+    // should stay fresh. Only attach it if the wrapped provider has it, to
+    // preserve EquityProvider's optionality.
+    ...(provider.searchSymbol && {
+      searchSymbol: (query: string) => provider.searchSymbol!(query),
+    }),
   };
 }
 

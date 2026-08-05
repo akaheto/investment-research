@@ -2,6 +2,7 @@ import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { RefreshButton } from "../refresh-button";
 import { MigrateButton } from "../migrate-button";
+import { DeleteInstrumentButton } from "../delete-instrument-button";
 import { getApiStats, getRecentImports, getRecentEvents } from "@/lib/audit/tracker";
 import { getCacheStats } from "@/lib/cache/provider-cache";
 import { formatTimeEST } from "@/lib/format-time";
@@ -54,6 +55,12 @@ export default async function AdminAnalyticsPage() {
                 Apply any pending database schema migrations (safe to re-run):
               </p>
               <MigrateButton />
+            </div>
+            <div>
+              <p className="text-sm text-muted mb-2">
+                Delete a bad/unwatched instrument (e.g. a garbage symbol created before validation existed):
+              </p>
+              <DeleteInstrumentButton />
             </div>
           </div>
         </Card>

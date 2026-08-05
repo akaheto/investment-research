@@ -10,6 +10,8 @@ import { computeScoresForWatchlist } from "@/app/screener/actions";
 import { fetchNewsForWatchlist } from "@/app/news/actions";
 import { getCacheStats, clearExpiredCache } from "@/lib/cache/provider-cache";
 import { db } from "@/db/client";
+import { instruments, watchlist, pricesDaily, factorScores, fundamentalsSnapshots } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import path from "node:path";
 
 /**
@@ -128,5 +130,47 @@ export async function clearStaleCache() {
   } catch (err) {
     console.error("Failed to clear cache:", err);
     return { ok: false, error: String(err) };
+  }
+}
+
+/**
+ * Cleanup tool: permanently delete an instrument by symbol, along with its
+ * cached prices/scores/fundamentals. Refuses to delete anything currently
+ * on the watchlist (unwatch it first) as a safety rail. Meant for clearing
+ * out bad symbols created before addToWatchlist validated its input.
+ */
+export async function deleteUnwatchedInstrument(symbol: string) {
+  try {
+    const upperSymbol = symbol.trim().toUpperCase();
+    if (!upperSymbol) {
+      return { ok: false, message: "Enter a symbol." };
+    }
+
+    const rows = await db.select().from(instruments).where(eq(instruments.symbol, upperSymbol));
+    if (rows.length === 0) {
+      return { ok: false, message: `No instrument found with symbol "${upperSymbol}".` };
+    }
+    const instrument = rows[0];
+
+    const watched = await db.select().from(watchlist).where(eq(watchlist.instrumentId, instrument.id));
+    if (watched.length > 0) {
+      return { ok: false, message: `"${upperSymbol}" is still on the watchlist — remove it there first.` };
+    }
+
+    await db.delete(pricesDaily).where(eq(pricesDaily.instrumentId, instrument.id));
+    await db.delete(factorScores).where(eq(factorScores.instrumentId, instrument.id));
+    await db.delete(fundamentalsSnapshots).where(eq(fundamentalsSnapshots.instrumentId, instrument.id));
+    await db.delete(instruments).where(eq(instruments.id, instrument.id));
+
+    logAuditEvent({
+      eventType: "data_refresh",
+      action: "Deleted unwatched instrument",
+      details: { symbol: upperSymbol },
+    });
+
+    return { ok: true, message: `Deleted "${upperSymbol}".` };
+  } catch (err) {
+    console.error("Failed to delete instrument:", err);
+    return { ok: false, message: String(err) };
   }
 }

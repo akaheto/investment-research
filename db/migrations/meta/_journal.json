@@ -29,6 +29,13 @@
       "when": 1785851400000,
       "tag": "0009_add_funds_optimization",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1785916966440,
+      "tag": "0010_add_research_items",
+      "breakpoints": true
     }
   ]
 }

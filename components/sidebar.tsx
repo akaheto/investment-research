@@ -50,6 +50,19 @@ const icons: Record<string, ReactNode> = {
       <path d="M8 3.5v1M8 11.5v1M3.5 8h1M11.5 8h1M4.9 4.9l.7.7M10.4 10.4l.7.7M11.1 4.9l-.7.7M5.6 10.4l-.7.7" strokeLinecap="round" />
     </svg>
   ),
+  Research: (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4">
+      <circle cx="6.8" cy="6.8" r="4.3" />
+      <path d="M9.9 9.9l3 3" strokeLinecap="round" />
+    </svg>
+  ),
+  Launchpad: (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4">
+      <path d="M8 1.5c1.8 1.6 2.6 4 2.3 6.8-.1.9-.4 1.7-.9 2.4H6.6c-.5-.7-.8-1.5-.9-2.4C5.4 5.5 6.2 3.1 8 1.5z" strokeLinejoin="round" />
+      <circle cx="8" cy="6.3" r="1" />
+      <path d="M6.2 10.2l-1.7 3M9.8 10.2l1.7 3" strokeLinecap="round" />
+    </svg>
+  ),
   Admin: (
     <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4">
       <path d="M2.5 2.5h11v11h-11z" strokeLinecap="round" strokeLinejoin="round" />

@@ -257,6 +257,18 @@ export const newsNarratives = sqliteTable(
   ],
 );
 
+// ── Research (authored outside the dashboard, displayed by it) ────────
+export const researchItems = sqliteTable(
+  "research_items",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    title: text("title").notNull(),
+    publishedAt: text("published_at").notNull(),
+    body: text("body").notNull(),
+  },
+  (t) => [index("ix_research_published").on(t.publishedAt)],
+);
+
 // ── Epic G: Portfolio Assessment & Optimization ────────────────────────
 
 export const funds = sqliteTable(

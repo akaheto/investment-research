@@ -1,7 +1,7 @@
 /**
- * Navigation model for the left rail (VISUAL_STYLE_GUIDE §5: Dashboard,
- * Watchlist, Screener, Markets, News, Settings). Kept as data + a pure
- * active-state helper so it's unit-testable without rendering.
+ * Navigation model for the left rail (VISUAL_STYLE_GUIDE §5). Kept as
+ * data + a pure active-state helper so it's unit-testable without
+ * rendering.
  */
 
 export interface NavItem {
@@ -15,8 +15,10 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Screener", href: "/screener" },
   { label: "Markets", href: "/markets" },
   { label: "News", href: "/news" },
+  { label: "Research", href: "/research" },
   { label: "Oracle", href: "/oracle" },
   { label: "Portfolio", href: "/portfolio" },
+  { label: "Launchpad", href: "/launchpad" },
   { label: "Settings", href: "/settings" },
   { label: "Admin", href: "/admin/analytics" },
 ];

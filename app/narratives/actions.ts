@@ -105,7 +105,7 @@ export async function generateNarrative(instrumentId: number): Promise<{
 
     // Call Claude API to generate narrative
     const message = await client.messages.create({
-      model: "claude-opus-4-1-20250805",
+      model: "claude-sonnet-5",
       max_tokens: 500,
       system: `You are an investment analyst. Generate a brief, neutral narrative (2-3 sentences) summarizing
 recent developments for a company based on recent news headlines. Focus on factual business developments,

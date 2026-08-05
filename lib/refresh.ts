@@ -71,15 +71,16 @@ export async function runRefresh() {
     const provider = getEquityProvider();
 
     // Get symbols from watchlist + instruments join
-    const { watchlist } = await import("@/db/schema");
+    const { watchlist, pricesDaily } = await import("@/db/schema");
     const { instruments: instrumentsTable } = await import("@/db/schema");
 
     const watchlistItems = await db
-      .select({ symbol: instrumentsTable.symbol })
+      .select({ id: instrumentsTable.id, symbol: instrumentsTable.symbol })
       .from(watchlist)
       .innerJoin(instrumentsTable, eq(watchlist.instrumentId, instrumentsTable.id));
 
     const symbols = watchlistItems.map((item) => item.symbol);
+    const instrumentIdBySymbol = new Map(watchlistItems.map((item) => [item.symbol, item.id]));
 
     if (symbols.length > 0) {
       try {
@@ -93,6 +94,22 @@ export async function runRefresh() {
         results.symbols += symbols.length;
         results.observations += Array.isArray(quotes) ? quotes.length : 0;
         console.log(`fetched ${symbols.length} quotes from ${provider.name}`);
+
+        // Persist quotes to pricesDaily so Watchlist/Screener/Markets can read them back
+        if (Array.isArray(quotes)) {
+          for (const quote of quotes) {
+            const instrumentId = instrumentIdBySymbol.get(quote.symbol);
+            if (instrumentId === undefined || typeof quote.price !== "number") continue;
+            const date = quote.asOf ? quote.asOf.split("T")[0] : new Date().toISOString().split("T")[0];
+            await db
+              .insert(pricesDaily)
+              .values({ instrumentId, date, close: quote.price })
+              .onConflictDoUpdate({
+                target: [pricesDaily.instrumentId, pricesDaily.date],
+                set: { close: quote.price },
+              });
+          }
+        }
       } catch (e) {
         results.errors.push(`quotes: ${String(e)}`);
       }

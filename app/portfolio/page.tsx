@@ -2,9 +2,12 @@ import { PageHeader } from "@/components/page-header";
 import { PortfolioOverview } from "@/components/portfolio-overview";
 import { HoldingsTable } from "@/components/holdings-table";
 import { OptimizationSummary } from "@/components/optimization-summary";
+import { Card, EmptyState } from "@/components/card";
 import { db } from "@/db/client";
 import { accounts, fundHoldings, funds, optimizationSuggestions } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getLatestAssessmentForAccount } from "./event-assessment-actions";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +72,7 @@ export default async function PortfolioPage() {
     };
   }
   const holdingsList: HoldingDisplay[] = [];
+  const balanceByAssetClass = new Map<string, number>();
 
   for (const holding of holdings) {
     const fund = fundMap.get(holding.fundId);
@@ -77,6 +81,9 @@ export default async function PortfolioPage() {
     const er = fund.expenseRatioNet ?? 0;
     totalBalance += holding.balanceAmount;
     totalWeightedER += er * (holding.balanceAmount / 1000000); // Weighted by balance
+
+    const assetClass = fund.assetClassSlot ?? "other";
+    balanceByAssetClass.set(assetClass, (balanceByAssetClass.get(assetClass) ?? 0) + holding.balanceAmount);
 
     // Check if there's a suggestion for this holding
     const suggestion = suggestionMap.get(holding.fundId);
@@ -109,6 +116,27 @@ export default async function PortfolioPage() {
   const avgExpenseRatio = holdings.length > 0 ? (totalBalance > 0 ? (totalWeightedER * 1000000) / totalBalance : 0) : 0;
   const annualFeesEstimate = totalBalance * (avgExpenseRatio / 100);
 
+  const assetClassLabels: Record<string, string> = {
+    us_large_cap: "US Large Cap",
+    us_mid_cap: "US Mid Cap",
+    us_small_mid_cap: "US Small/Mid Cap",
+    bonds: "Bonds",
+    bond_core: "Bonds",
+    intl: "International",
+    intl_developed: "International",
+    mm: "Money Market",
+    target_date: "Target Date",
+    real_estate: "Real Estate",
+    other: "Other",
+  };
+  const allocation = Array.from(balanceByAssetClass.entries())
+    .map(([assetClass, balance]) => ({
+      category: assetClassLabels[assetClass] ?? assetClass.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      balance,
+      pct: totalBalance > 0 ? Math.round((balance / totalBalance) * 100) : 0,
+    }))
+    .sort((a, b) => b.balance - a.balance);
+
   const portfolioStats = {
     totalBalance,
     avgExpenseRatio,
@@ -124,6 +152,20 @@ export default async function PortfolioPage() {
     highRiskSwaps: highRiskCount,
   };
 
+  let assessment: Awaited<ReturnType<typeof getLatestAssessmentForAccount>> = null;
+  try {
+    assessment = await getLatestAssessmentForAccount(account.id);
+  } catch (error) {
+    console.error("❌ Failed to load event assessment:", error);
+  }
+
+  const riskColor =
+    assessment?.riskLevel === "high"
+      ? "text-loss"
+      : assessment?.riskLevel === "moderate"
+        ? "text-warning"
+        : "text-gain";
+
   return (
     <>
       <PageHeader
@@ -131,15 +173,58 @@ export default async function PortfolioPage() {
         caption={`${account.name} - ${account.taxType?.toUpperCase()}`}
       />
 
+      {allAccounts.length > 1 && (
+        <div className="mb-4 flex items-center gap-2 text-sm">
+          <span className="text-muted">Accounts:</span>
+          {allAccounts.map((a) =>
+            a.id === account.id ? (
+              <span key={a.id} className="px-2 py-1 rounded bg-accent/10 text-accent font-semibold">
+                {a.name}
+              </span>
+            ) : (
+              <Link
+                key={a.id}
+                href={`/portfolio/${a.id}`}
+                className="px-2 py-1 rounded text-muted hover:bg-surface hover:text-ink"
+              >
+                {a.name}
+              </Link>
+            ),
+          )}
+        </div>
+      )}
+
       <div className="space-y-4">
         {/* Portfolio Overview Stats */}
-        <PortfolioOverview stats={portfolioStats} />
+        <PortfolioOverview stats={portfolioStats} allocation={allocation} />
 
         {/* Holdings Table with Suggestions */}
         <HoldingsTable holdings={holdingsList} />
 
         {/* Optimization Summary */}
         <OptimizationSummary summary={optimizationSummary} />
+
+        {/* Event Impact Assessment (Claude narrative, G5) */}
+        <Card title="Event Impact Assessment">
+          {assessment ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted">
+                  {assessment.upcomingEventsCount} upcoming event{assessment.upcomingEventsCount === 1 ? "" : "s"} considered
+                </span>
+                <span className={`font-semibold capitalize ${riskColor}`}>{assessment.riskLevel} risk</span>
+              </div>
+              <p className="text-sm text-ink whitespace-pre-wrap">{assessment.narrative}</p>
+              <div className="text-xs text-muted pt-2 border-t border-hairline">
+                Generated {new Date(assessment.generatedAt).toLocaleString()}
+              </div>
+            </div>
+          ) : (
+            <EmptyState>
+              No event assessment yet — run &quot;G5: Assess Event Impact&quot; in Settings.
+            </EmptyState>
+          )}
+        </Card>
       </div>
     </>
   );

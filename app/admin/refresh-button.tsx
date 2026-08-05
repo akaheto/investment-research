@@ -1,17 +1,20 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { triggerManualRefresh } from "./actions";
 
 export function RefreshButton() {
   const [isPending, startTransition] = useTransition();
+  const [result, setResult] = useState<string | null>(null);
 
   const handleRefresh = () => {
+    setResult(null);
     startTransition(async () => {
       try {
-        await triggerManualRefresh();
+        const res = await triggerManualRefresh();
+        setResult(res.message);
       } catch (err) {
-        console.error("Refresh failed:", err);
+        setResult(`❌ Refresh failed: ${String(err)}`);
       }
     });
   };
@@ -25,7 +28,8 @@ export function RefreshButton() {
       >
         {isPending ? "Refreshing..." : "Trigger Manual Refresh"}
       </button>
-      {isPending && <div className="text-sm text-muted">✅ Refresh started. Check back in a minute for results.</div>}
+      {isPending && <div className="text-sm text-muted">Refreshing — this can take a moment...</div>}
+      {!isPending && result && <div className="text-sm text-muted">{result}</div>}
     </div>
   );
 }

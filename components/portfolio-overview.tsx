@@ -1,4 +1,4 @@
-import { Card } from "@/components/card";
+import { Card, EmptyState } from "@/components/card";
 
 interface PortfolioStats {
   totalBalance: number;
@@ -7,14 +7,20 @@ interface PortfolioStats {
   holdingCount: number;
 }
 
-export async function PortfolioOverview({ stats }: { stats: PortfolioStats }) {
-  const allocationByCategory = [
-    { category: "US Large Cap", pct: 35, balance: stats.totalBalance * 0.35 },
-    { category: "International", pct: 25, balance: stats.totalBalance * 0.25 },
-    { category: "US Mid Cap", pct: 20, balance: stats.totalBalance * 0.20 },
-    { category: "Bonds", pct: 12, balance: stats.totalBalance * 0.12 },
-    { category: "Real Estate", pct: 8, balance: stats.totalBalance * 0.08 },
-  ];
+export interface AllocationSlice {
+  category: string;
+  pct: number;
+  balance: number;
+}
+
+export async function PortfolioOverview({
+  stats,
+  allocation,
+}: {
+  stats: PortfolioStats;
+  allocation: AllocationSlice[];
+}) {
+  const allocationByCategory = allocation;
 
   return (
     <div className="grid grid-cols-12 gap-4">
@@ -42,6 +48,9 @@ export async function PortfolioOverview({ stats }: { stats: PortfolioStats }) {
 
       {/* Allocation Breakdown */}
       <Card title="Asset Allocation" className="col-span-12 lg:col-span-6">
+        {allocationByCategory.length === 0 ? (
+          <EmptyState>No holdings to allocate yet.</EmptyState>
+        ) : (
         <div className="space-y-3">
           {allocationByCategory.map((category) => (
             <div key={category.category}>
@@ -59,6 +68,7 @@ export async function PortfolioOverview({ stats }: { stats: PortfolioStats }) {
             </div>
           ))}
         </div>
+        )}
       </Card>
 
       {/* Fee Impact */}

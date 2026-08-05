@@ -3,6 +3,13 @@
 import { db } from "@/db/client";
 import { instruments, watchlist, factorScores } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { fetchMetricsForSymbol } from "@/lib/signals/data-fetcher";
+import {
+  computeValuationFactor,
+  computeGrowthFactor,
+  computeQualityFactor,
+  computeMomentumFactor,
+} from "@/lib/signals/factors";
 
 export interface ScreenerResult {
   id: number;
@@ -19,11 +26,62 @@ export interface ScreenerResult {
 
 /**
  * Compute and store factor scores for all watchlist instruments.
- * Returns count of scored instruments.
+ * Fetches real fundamentals/technicals per symbol, ranks each against the
+ * rest of the watchlist (the "universe"), and persists valuation/growth/
+ * quality/momentum percentiles to factorScores. Returns count of scored
+ * instruments.
  */
 export async function computeScoresForWatchlist(presetName: string = "balanced"): Promise<{ count: number }> {
-  const results = await getScreenerResults(presetName);
-  return { count: results.length };
+  const watchlistItems = await db
+    .select({
+      id: instruments.id,
+      symbol: instruments.symbol,
+      sector: instruments.sector,
+    })
+    .from(watchlist)
+    .innerJoin(instruments, eq(watchlist.instrumentId, instruments.id));
+
+  if (watchlistItems.length === 0) {
+    return { count: 0 };
+  }
+
+  // Fetch raw metrics for every watchlist symbol once — used both as each
+  // instrument's own metrics and as the comparison universe for percentiles.
+  const metricsBySymbol = new Map(
+    await Promise.all(
+      watchlistItems.map(async (item) => [item.symbol, await fetchMetricsForSymbol(item.symbol, item.sector ?? undefined)] as const),
+    ),
+  );
+  const universe = Array.from(metricsBySymbol.values());
+  const runAt = new Date().toISOString();
+  let scoredCount = 0;
+
+  for (const item of watchlistItems) {
+    const raw = metricsBySymbol.get(item.symbol);
+    if (!raw) continue;
+
+    const factorResults = {
+      valuation: computeValuationFactor(raw, universe, item.sector ?? undefined),
+      growth: computeGrowthFactor(raw, universe),
+      quality: computeQualityFactor(raw, universe, item.sector ?? undefined),
+      momentum: computeMomentumFactor(raw, universe),
+    };
+
+    for (const [factor, result] of Object.entries(factorResults)) {
+      await db.insert(factorScores).values({
+        instrumentId: item.id,
+        runAt,
+        factor,
+        rawScore: result.score,
+        percentile: result.score,
+        weightsPresetId: presetName,
+        confidence: result.confidence,
+      });
+    }
+    scoredCount++;
+  }
+
+  return { count: scoredCount };
 }
 
 /**

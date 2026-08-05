@@ -2,7 +2,7 @@
 
 import { db } from "@/db/client";
 import { accounts, fundHoldings, funds, events, assessments } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { Anthropic } from "@anthropic-ai/sdk";
 
 interface EventImpactAssessment {
@@ -100,7 +100,7 @@ export async function assessEventImpactForAccount(
     // Call Claude to assess impact
     const client = new Anthropic();
     const response = await client.messages.create({
-      model: "claude-opus-4-1-20250805",
+      model: "claude-sonnet-5",
       max_tokens: 400,
       system: `You are an investment analyst. Analyze upcoming market events and their potential impact on a portfolio.
 Be concise, practical, and focus on specific holdings mentioned. Assess risk level as low/moderate/high.
@@ -152,10 +152,11 @@ How might these events impact this portfolio? What should the investor watch for
           totalBalance,
           holdingCount: holdings.length,
           eventCount: upcomingEvents.length,
+          riskLevel,
         }),
         narrativeText: narrative,
         citedEventIdsCsv: citedEventIds.join(","),
-        modelId: "claude-opus-4-1-20250805",
+        modelId: "claude-sonnet-5",
       })
       .onConflictDoNothing();
 
@@ -175,7 +176,7 @@ export async function getLatestAssessmentForAccount(accountId: number): Promise<
       .select()
       .from(assessments)
       .where(eq(assessments.accountId, accountId))
-      .orderBy((a) => a.runAt)
+      .orderBy(desc(assessments.runAt))
       .limit(1);
 
     if (latest.length === 0) {
@@ -202,7 +203,7 @@ export async function getLatestAssessmentForAccount(accountId: number): Promise<
       accountName: account[0]?.name || "Unknown",
       totalBalance: deterministicData.totalBalance || 0,
       upcomingEventsCount: deterministicData.eventCount || 0,
-      riskLevel: "moderate", // Would need to be stored to retrieve accurately
+      riskLevel: deterministicData.riskLevel || "low",
       narrative: assessment.narrativeText || "",
       citedEventIds,
       generatedAt: assessment.runAt,

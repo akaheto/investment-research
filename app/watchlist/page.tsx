@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { useState, useEffect } from "react";
 import { addToWatchlist, removeFromWatchlist, getWatchlistWithQuotes } from "./actions";
 import type { WatchlistQuote } from "./actions";
+import Link from "next/link";
 
 /**
  * Watchlist page — real quotes from database with factor scores.
@@ -92,7 +93,11 @@ export default function WatchlistPage() {
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id} className="border-b border-hairline hover:bg-page">
-                    <td className="px-4 py-2 font-mono font-semibold text-accent">{item.symbol}</td>
+                    <td className="px-4 py-2 font-mono font-semibold text-accent">
+                      <Link href={`/instrument/${item.symbol}`} className="hover:underline">
+                        {item.symbol}
+                      </Link>
+                    </td>
                     <td className="px-4 py-2 text-right text-ink">${item.price.toFixed(2)}</td>
                     <td
                       className={`px-4 py-2 text-right font-mono text-sm ${

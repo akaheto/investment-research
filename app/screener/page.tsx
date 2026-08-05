@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { useState, useEffect } from "react";
 import { getScreenerResults } from "./actions";
 import type { ScreenerResult } from "./actions";
+import Link from "next/link";
 
 export default function ScreenerPage() {
   const [results, setResults] = useState<ScreenerResult[]>([]);
@@ -79,7 +80,11 @@ export default function ScreenerPage() {
               <tbody>
                 {sorted.map((row) => (
                   <tr key={row.symbol} className="border-b border-hairline hover:bg-page">
-                    <td className="px-4 py-2 font-mono font-semibold text-accent">{row.symbol}</td>
+                    <td className="px-4 py-2 font-mono font-semibold text-accent">
+                      <Link href={`/instrument/${row.symbol}`} className="hover:underline">
+                        {row.symbol}
+                      </Link>
+                    </td>
                     <td className="px-4 py-2 text-right">
                       <span className="inline-block w-12 bg-gradient-to-r from-loss to-gain px-2 py-1 rounded text-xs font-semibold text-white">
                         {Math.round(row.compositeScore)}

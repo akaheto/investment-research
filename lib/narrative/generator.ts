@@ -41,7 +41,7 @@ export async function generateNarrative(req: NarrativeRequest): Promise<string> 
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-opus-4-1-20250805",
+        model: "claude-sonnet-5",
         max_tokens: 500,
         messages: [
           {

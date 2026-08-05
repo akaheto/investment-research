@@ -4,38 +4,28 @@ import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { getInstrumentDetail } from "../actions";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import type { InstrumentDetail } from "../actions";
 
-export default function InstrumentPage({ params }: { params: { symbol: string } }) {
+export default function InstrumentPage({ params }: { params: Promise<{ symbol: string }> }) {
+  const { symbol } = use(params);
   const [detail, setDetail] = useState<InstrumentDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const data = await getInstrumentDetail(params.symbol);
+      const data = await getInstrumentDetail(symbol);
       setDetail(data);
       setLoading(false);
     }
     load();
-  }, [params.symbol]);
-
-  if (!detail) {
-    return (
-      <>
-        <PageHeader title={params.symbol} caption="Price history, fundamentals, and composite score" />
-        <Card>
-          <EmptyState>Instrument not found. Add {params.symbol} to your watchlist first.</EmptyState>
-        </Card>
-      </>
-    );
-  }
+  }, [symbol]);
 
   if (loading) {
     return (
       <>
-        <PageHeader title={params.symbol} caption="Loading..." />
+        <PageHeader title={symbol} caption="Loading..." />
         <Card>
           <div className="py-10 text-center text-sm text-muted">Loading instrument data...</div>
         </Card>
@@ -43,9 +33,20 @@ export default function InstrumentPage({ params }: { params: { symbol: string } 
     );
   }
 
+  if (!detail) {
+    return (
+      <>
+        <PageHeader title={symbol} caption="Price history, fundamentals, and composite score" />
+        <Card>
+          <EmptyState>Instrument not found. Add {symbol} to your watchlist first.</EmptyState>
+        </Card>
+      </>
+    );
+  }
+
   return (
     <>
-      <PageHeader title={detail?.symbol || params.symbol} caption={detail?.name || ""} />
+      <PageHeader title={detail?.symbol || symbol} caption={detail?.name || ""} />
       <div className="grid grid-cols-12 gap-4">
         <Card title="Price" className="col-span-12 lg:col-span-8 h-80">
           {detail.priceHistory.length > 0 ? (

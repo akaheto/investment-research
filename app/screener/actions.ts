@@ -10,6 +10,7 @@ import {
   computeQualityFactor,
   computeMomentumFactor,
 } from "@/lib/signals/factors";
+import { computeCompositeScore } from "@/lib/scoring/composer";
 
 export interface ScreenerResult {
   id: number;
@@ -78,6 +79,25 @@ export async function computeScoresForWatchlist(presetName: string = "balanced")
         confidence: result.confidence,
       });
     }
+
+    const composite = computeCompositeScore(
+      {
+        valuation: factorResults.valuation.score,
+        growth: factorResults.growth.score,
+        quality: factorResults.quality.score,
+        momentum: factorResults.momentum.score,
+      },
+      presetName,
+    );
+    await db.insert(factorScores).values({
+      instrumentId: item.id,
+      runAt,
+      factor: "composite",
+      rawScore: composite.compositeScore,
+      percentile: composite.compositeScore,
+      weightsPresetId: presetName,
+      confidence: composite.confidence === "full" ? "full" : "low",
+    });
     scoredCount++;
   }
 

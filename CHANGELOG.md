@@ -4,7 +4,89 @@ All notable changes to this project. One entry per deliverable.
 
 ## [Unreleased]
 
+### 2026-08-05
+
+- **Fix (critical)** — Production was fully broken despite being signed off
+  the previous day. `db/client.ts` only read `TURSO_DATABASE_URL`, but
+  Vercel had `DATABASE_URL` configured — every production DB call silently
+  fell back to an unwritable local file. Fixed by accepting either name.
+  This in turn revealed Turso had zero applied migrations (schema never
+  existed there), and that two migration files used multi-statement SQL
+  without drizzle-kit's breakpoint markers, which Turso's remote protocol
+  rejects (local dev's embedded driver had masked this). All three fixed;
+  added an in-app Admin > Apply DB Migrations action since the DB
+  credentials are Vercel "sensitive" vars, unreadable even by the CLI.
+- **Fix (production audit)** — Full production audit (every page/feature
+  exercised against the live deployment with real evidence — curl status
+  codes, runtime logs, DB reads — not screenshots alone) found and fixed
+  11 further issues: prices and factor scores were computed on every
+  refresh but never written to the database, so Screener/Watchlist could
+  never show real data through any button in the app; deprecated Claude
+  model (`claude-opus-4-1-20250805`, EOL the next day) replaced with
+  `claude-sonnet-5`; G5 event-impact narratives were generated via a real
+  paid API call but never displayed anywhere — added to both portfolio
+  pages; `/instrument/[symbol]` and `/portfolio/[accountId]` were
+  permanently broken (Next.js 16 requires unwrapping `params` as a
+  Promise; both read it synchronously) — fixed, and `/portfolio/[accountId]`
+  rebuilt from 100% hardcoded mock data to real DB queries; Portfolio page
+  only ever showed `accounts[0]` with no way to reach the second account —
+  added an account switcher; Dashboard was a fully static stub ignoring
+  real data — wired to Markets/Watchlist/News; asset allocation
+  percentages were hardcoded regardless of actual holdings — now computed
+  from each fund's real `assetClassSlot`. CLAUDE.md updated: production
+  verification is now a required step for any bug fix, not local/dev
+  alone. Tests 41/43 ✓ (2 skipped), build ✓, lint ✓.
+- **Enhancement** — Watchlist accepts a company name, not just a ticker.
+  `addToWatchlist()` previously took whatever text was typed, uppercased
+  it, and created an instrument from that literal string with no
+  validation — typing "Tesla" created a fake instrument symbol "TESLA",
+  not the real ticker. Now resolves free text via the equity provider's
+  symbol search (added `EquityProvider.searchSymbol()`, backed by
+  yahoo-finance2's built-in search, which handles both tickers and
+  company names identically) before ever touching the database; rejects
+  unmatched input with a clear error instead of creating garbage. Added
+  `Admin > Delete Instrument`, a cleanup tool (with a can't-delete-if-
+  still-watched safety rail) for symbols created before this validation
+  existed. 6 new tests (name resolution, exact-match preference, non-
+  equity filtering, no-match, blank input, transport failure).
+- **Docs** — All five generated documents reconciled against actual
+  shipped/verified state: ENHANCEMENTS (4 items moved to Implemented),
+  PROJECT_PLAN (corrected an inflated "$108,767 annual savings" figure
+  left over from the pre-fix 100x calculation bug; added Q4 audit
+  deliverable), TECHNICAL_SPEC (documented the env-var-name, Turso
+  migration-breakpoint, and Next.js 16 async-params gotchas found today),
+  USER_GUIDE (rewritten from future-tense "what v1 will do" to present-
+  tense actual behavior — it had still said "the app runs on your Mac; a
+  web version is planned" despite being live on Vercel), VISUAL_STYLE_GUIDE
+  (nav list was missing Oracle/Portfolio/Admin; score-badge pattern
+  claimed no color-mapping but the shipped component uses a loss-to-gain
+  gradient; added the destructive-button pattern).
+
 ### 2026-08-04
+
+- **C2-C5** — Watchlist page with real quote data + factor-score display;
+  instrument detail page with price history/fundamentals; Markets page
+  with live indices/yields/crypto; News page with EST timestamps.
+- **D1-D4** — Factor scoring library (`lib/signals/metrics.ts`:
+  winsorization, percentile rank, confidence assessment) and composite
+  scorer (`lib/scoring/composer.ts`: tunable weights, Balanced/Value/
+  Growth/Quality presets). Screener UI ranked by composite score, sortable
+  by any factor. Macro regime dial from FRED data on the Markets page.
+- **E1-E3** — NewsAPI ingestion wired into the refresh pipeline
+  (`fetchNewsForWatchlist()`); events calendar (FOMC meetings, CPI
+  releases) on the Markets page; Claude-written event-impact narrative
+  (E3, folded into G5).
+- **G1-G5** — Portfolio data model (accounts, holdings, plan_menu,
+  proxy_map, assessments); fund scoring (60% cost + 40% performance)
+  against each plan's menu; portfolio overview/holdings/optimization UI;
+  event-impact assessments via the Claude API. Admin panel wired for
+  one-click generation of all of the above.
+- **F1** — Vercel deployment: Turso database, all env vars configured,
+  cron job scheduled daily at 3:00 AM UTC.
+- **Q1-Q3** — 35/37 unit tests passing; lint/typecheck clean; an initial
+  manual QA pass found no crashes in-app. (Q3's pass turned out to have
+  missed several production-only failures — see the 2026-08-05 audit
+  entries above, which superseded it as the real pre-ship gate.)
 
 - **B-Cache** — Provider caching layer: `lib/cache/provider-cache.ts`
   implements TTL-based response caching (quotes 15m, fundamentals 24h, macro

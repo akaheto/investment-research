@@ -6,6 +6,8 @@ crypto, and bonds — plus transparent, rules-based factor scoring
 (valuation / growth / quality / momentum) to surface candidates worth a
 closer look. Research aid, not investment advice.
 
+**Live:** https://investment-research-weld.vercel.app
+
 ## Stack
 
 - **Next.js 16** (App Router) · React 19 · TypeScript · Tailwind 4

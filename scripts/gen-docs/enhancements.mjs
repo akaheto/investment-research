@@ -7,21 +7,22 @@ await writeDoc("ENHANCEMENTS.docx", [
 
   h1("Implemented"),
   table(["Idea", "Date", "Notes"], [
+    ["Portfolio assessment & optimization for the user's two Transamerica Retirement accounts", "2026-08-04", "Epic G shipped: holdings + fund menu ingested (manual entry), held funds scored against menu alternatives, within-menu swap suggestions with real annual-savings estimates. Both accounts reachable via an account switcher on /portfolio."],
+    ["News/current-events influence in assessments, explicitly called out", "2026-08-04", "Two-layer assessment shipped: deterministic factor scores (Screener/Watchlist) + a Claude-written Event Impact narrative per account (G5), citing upcoming FOMC/CPI events. Displayed on the Portfolio and account-detail pages."],
+    ["LLM narrative layer (Claude API) — summarize news/filings per holding", "2026-08-04", "Shipped as the G5 Event Impact Assessment narrative. Explains only; never alters scores. (Was being generated and silently discarded — fixed 2026-08-05 to actually display.)"],
+    ["Phone access via Vercel deployment", "2026-08-04", "Live in production on Vercel (Turso DB, daily cron refresh)."],
     ["Watchlist accepts a company name, not just a ticker (\"Tesla\" resolves to TSLA)", "2026-08-04", "addToWatchlist() resolves free text via the equity provider's symbol search before ever writing to the DB; rejects unmatched input instead of creating a fake instrument. Includes a cleanup tool (Admin > Delete Instrument) for garbage symbols created before this existed."],
   ], { widths: [40, 14, 46] }),
 
   h1("Not Yet Implemented"),
   table(["Idea", "Raised", "Notes"], [
-    ["Portfolio assessment & optimization for the user's two Transamerica Retirement accounts", "2026-08-03", "ACCEPTED INTO PLAN (new Epic G): ingest holdings + each plan's fund menu, score held funds and menu alternatives on the foundational criteria, suggest within-menu optimization swaps. User decision: manual entry + CSV import."],
     ["Aggregator sync for account holdings (Plaid / SnapTrade)", "2026-08-03", "Deferred alternative to manual entry: cost, third-party credential sharing, and spotty Transamerica retirement coverage. Revisit if manual updates become a chore."],
-    ["News/current-events influence in assessments (political + business), explicitly called out", "2026-08-03", "ACCEPTED INTO PLAN: two-layer assessment — deterministic factor scores + an event overlay in which every cited news item states its direction of influence. Pulls the LLM narrative layer (E3) earlier; requires Claude API key."],
     ["Paid data provider upgrade (FMP / Polygon / Tiingo)", "2026-08-03", "Planned-for by design: env-driven provider selection (B7). Trigger: yahoo-finance2 breakage or need for deeper fundamentals/real-time."],
-    ["LLM narrative layer (Claude API) — summarize news/filings per holding", "2026-08-03", "Scheduled as Epic E3. Explains only; never alters scores."],
-    ["Backtesting engine over persisted factor-score history", "2026-08-03", "factor_scores table is designed to enable this; consider DuckDB for the analytics if data grows."],
+    ["Backtesting engine over persisted factor-score history", "2026-08-03", "factor_scores table is designed to enable this; consider DuckDB for the analytics if data grows. Factor scores now actually persist (fixed 2026-08-05), so there's real history to backtest against going forward."],
     ["Individual bond data (CUSIP-level)", "2026-08-03", "Deferred — requires premium data; v1 uses yield curve + bond-ETF proxies."],
-    ["Phone access via Vercel deployment", "2026-08-03", "Scheduled as Epic F1 (Turso + cron refresh + access protection)."],
     ["Real-time quotes", "2026-08-03", "Requires paid provider; free tier is delayed/EOD."],
     ["Portfolio tracking (positions, cost basis, P&L)", "2026-08-03", "Out of v1 scope — dashboard is research-first; natural v2 candidate."],
+    ["Market indices/crypto data on the Markets & Dashboard pages (SPY/QQQ/IWM/BTC/ETH/USDT)", "2026-08-05", "Pipeline now persists prices for whatever's on the watchlist, but these specific index/crypto instruments are never seeded, so the cards stay correctly empty. Needs a seed step (Admin action) to populate them."],
   ], { widths: [40, 14, 46] }),
 
   h1("Rejected / Deferred"),

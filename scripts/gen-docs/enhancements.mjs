@@ -7,7 +7,7 @@ await writeDoc("ENHANCEMENTS.docx", [
 
   h1("Implemented"),
   table(["Idea", "Date", "Notes"], [
-    ["—", "", "Nothing yet — v1 is under construction."],
+    ["Watchlist accepts a company name, not just a ticker (\"Tesla\" resolves to TSLA)", "2026-08-04", "addToWatchlist() resolves free text via the equity provider's symbol search before ever writing to the DB; rejects unmatched input instead of creating a fake instrument. Includes a cleanup tool (Admin > Delete Instrument) for garbage symbols created before this existed."],
   ], { widths: [40, 14, 46] }),
 
   h1("Not Yet Implemented"),

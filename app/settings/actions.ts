@@ -2,7 +2,7 @@
 
 import { db, getRawClient } from "@/db/client";
 import { accounts, instruments, watchlist, holdings, planMenu, proxyMap } from "@/db/schema";
-import { seedTransamericaFunds, loadMainAccountHoldings, loadManagementStaffIRAHoldings } from "@/app/portfolio/fund-actions";
+import { seedTransamericaFunds, loadMainAccountHoldings, loadManagementStaffIRAHoldings, refreshAllHoldings } from "@/app/portfolio/fund-actions";
 import { eq, inArray } from "drizzle-orm";
 
 /**
@@ -227,6 +227,14 @@ async function ensureWatchlistTypeColumn() {
     console.error("❌ Failed to ensure watchlist_type column:", error);
     throw error;
   }
+}
+
+/**
+ * Refresh holdings for all accounts
+ * Called every 2 weeks when new account statements are available
+ */
+export async function refreshAllAccountHoldings() {
+  return await refreshAllHoldings();
 }
 
 export async function createPortfolioWatchlists() {

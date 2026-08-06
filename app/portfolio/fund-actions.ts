@@ -2,7 +2,7 @@
 
 import { db } from "@/db/client";
 import { funds, fundPerformance, fundHoldings } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 interface FundData {
   fundName: string;
@@ -462,5 +462,125 @@ export async function loadManagementStaffIRAHoldings(accountId: number): Promise
   } catch (error) {
     console.error("Failed to load holdings:", error);
     return { ok: false, message: String(error) };
+  }
+}
+
+/**
+ * Refresh holdings for a specific account
+ * Clears old holdings and reloads with current data (for bi-weekly updates)
+ */
+export async function refreshAccountHoldings(accountId: number): Promise<{
+  ok: boolean;
+  clearedCount?: number;
+  loadedCount?: number;
+  message?: string;
+}> {
+  try {
+    const { accounts: accountsSchema } = await import("@/db/schema");
+
+    // Delete all existing holdings for this account
+    const existingHoldings = await db
+      .select()
+      .from(fundHoldings)
+      .where(eq(fundHoldings.accountId, accountId));
+
+    let clearedCount = 0;
+    if (existingHoldings.length > 0) {
+      await db.delete(fundHoldings).where(eq(fundHoldings.accountId, accountId));
+      clearedCount = existingHoldings.length;
+      console.log(`✓ Cleared ${clearedCount} old holdings for account ${accountId}`);
+    }
+
+    // Reload holdings based on account ID
+    let result;
+    const accountData = await db.select().from(accountsSchema).where(eq(accountsSchema.id, accountId)).limit(1);
+
+    if (accountData.length === 0) {
+      return { ok: false, message: `Account ${accountId} not found` };
+    }
+
+    const accountName = accountData[0].name?.toLowerCase() || "";
+
+    // Route to correct loader based on account name or ID
+    if (accountId === 1 || accountName.includes("main") || accountName.includes("403")) {
+      result = await loadMainAccountHoldings(accountId);
+    } else if (accountId === 2 || accountName.includes("management") || accountName.includes("staff")) {
+      result = await loadManagementStaffIRAHoldings(accountId);
+    } else {
+      // Default to main loader
+      result = await loadMainAccountHoldings(accountId);
+    }
+
+    if (!result.ok) {
+      return { ok: false, message: `Failed to reload holdings: ${result.message}` };
+    }
+
+    return {
+      ok: true,
+      clearedCount,
+      loadedCount: result.count,
+      message: `Refreshed ${accountData[0].name}: cleared ${clearedCount} old, loaded ${result.count} new holdings. Total: $${result.totalBalance?.toFixed(2)}`,
+    };
+  } catch (error) {
+    console.error("Failed to refresh holdings:", error);
+    return { ok: false, message: `Refresh failed: ${String(error)}` };
+  }
+}
+
+/**
+ * Refresh holdings for all existing accounts
+ * Use after updating holdings data in this file (bi-weekly portfolio snapshots)
+ */
+export async function refreshAllHoldings(): Promise<{
+  ok: boolean;
+  accountsRefreshed?: number;
+  totalCleared?: number;
+  totalLoaded?: number;
+  message?: string;
+}> {
+  try {
+    const { accounts: accountsSchema } = await import("@/db/schema");
+    const allAccounts = await db.select().from(accountsSchema);
+
+    if (allAccounts.length === 0) {
+      return { ok: false, message: "No accounts found to refresh" };
+    }
+
+    console.log(`📊 Refreshing holdings for ${allAccounts.length} account(s)...`);
+
+    let totalCleared = 0;
+    let totalLoaded = 0;
+    const results = [];
+
+    for (const account of allAccounts) {
+      const result = await refreshAccountHoldings(account.id);
+      if (result.ok) {
+        totalCleared += result.clearedCount || 0;
+        totalLoaded += result.loadedCount || 0;
+        results.push({
+          accountId: account.id,
+          name: account.name,
+          cleared: result.clearedCount,
+          loaded: result.loadedCount,
+        });
+        console.log(`  ✓ ${account.name}: ${result.clearedCount} cleared, ${result.loadedCount} loaded`);
+      } else {
+        console.error(`  ❌ ${account.name}: ${result.message}`);
+      }
+    }
+
+    const message = `Refreshed ${results.length} account(s): cleared ${totalCleared} holdings, loaded ${totalLoaded} new holdings`;
+    console.log(`✅ ${message}`);
+
+    return {
+      ok: true,
+      accountsRefreshed: results.length,
+      totalCleared,
+      totalLoaded,
+      message,
+    };
+  } catch (error) {
+    console.error("Failed to refresh all holdings:", error);
+    return { ok: false, message: `Batch refresh failed: ${String(error)}` };
   }
 }

@@ -9,22 +9,18 @@ import { seedTransamericaFunds, loadMainAccountHoldings, loadManagementStaffIRAH
  */
 export async function setupMainAccount() {
   try {
-    // Create account
-    const result = await db
-      .insert(accounts)
-      .values({
-        name: "Main",
-        institution: "Transamerica",
-        taxType: "403b",
-        createdAt: new Date().toISOString(),
-      })
-      .returning();
+    // Use raw SQL to avoid Drizzle/Turso id-as-null issue
+    const result = await db.run({
+      sql: `INSERT INTO accounts (name, institution, tax_type, created_at, external_id) VALUES (?, ?, ?, ?, NULL) RETURNING id, name, institution, tax_type, created_at, external_id`,
+      args: ["Main", "Transamerica", "403b", new Date().toISOString()],
+    });
 
-    if (result.length === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return { ok: false, message: "Failed to create account" };
     }
 
-    const accountId = result[0].id;
+    const row = result.rows[0] as Record<string, unknown>;
+    const accountId = row.id as number;
 
     // Load holdings
     const holdingsResult = await loadMainAccountHoldings(accountId);
@@ -43,22 +39,18 @@ export async function setupMainAccount() {
  */
 export async function setupManagementStaffIRA() {
   try {
-    // Create account
-    const result = await db
-      .insert(accounts)
-      .values({
-        name: "Management staff",
-        institution: "Transamerica",
-        taxType: "ira",
-        createdAt: new Date().toISOString(),
-      })
-      .returning();
+    // Use raw SQL to avoid Drizzle/Turso id-as-null issue
+    const result = await db.run({
+      sql: `INSERT INTO accounts (name, institution, tax_type, created_at, external_id) VALUES (?, ?, ?, ?, NULL) RETURNING id, name, institution, tax_type, created_at, external_id`,
+      args: ["Management staff", "Transamerica", "ira", new Date().toISOString()],
+    });
 
-    if (result.length === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return { ok: false, message: "Failed to create account" };
     }
 
-    const accountId = result[0].id;
+    const row = result.rows[0] as Record<string, unknown>;
+    const accountId = row.id as number;
 
     // Load holdings
     const holdingsResult = await loadManagementStaffIRAHoldings(accountId);

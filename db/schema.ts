@@ -73,7 +73,9 @@ export const factorScores = sqliteTable(
 
 export const watchlist = sqliteTable("watchlist", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  instrumentId: integer("instrument_id").notNull().unique().references(() => instruments.id),
+  instrumentId: integer("instrument_id").notNull().references(() => instruments.id),
+  /** 'user' (main watchlist) | 'portfolio_X' (X = institution name like 'transamerica') */
+  watchlistType: text("watchlist_type").notNull().default("user"),
   addedAt: text("added_at").notNull(),
   note: text("note"),
   targetPrice: real("target_price"),

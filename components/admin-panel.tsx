@@ -9,11 +9,13 @@ import {
   assessAllEventImpacts,
   initializeEconomicCalendar,
   getSetupStatus,
+  createPortfolioWatchlists,
 } from "@/app/settings/actions";
 
 interface SetupStatus {
   accountsSeeded: boolean;
   fundsSeeded: boolean;
+  portfolioWatchlistCreated?: boolean;
 }
 
 export function AdminPanel() {
@@ -176,6 +178,30 @@ export function AdminPanel() {
           </div>
         )}
       </div>
+
+      {/* Portfolio Watchlist — Only show if not created */}
+      {!results.createPortfolioWatchlists && (
+      <div className="border border-hairline rounded-lg overflow-hidden">
+        <div className="px-4 py-3 bg-surface border-b border-hairline space-y-2">
+          <p className="font-semibold text-sm text-ink">📋 Create Portfolio Watchlist</p>
+          <p className="text-xs text-muted">Auto-populate watchlist tabs with all portfolio holdings grouped by institution</p>
+        </div>
+        <div className="p-4">
+          <button
+            onClick={() => handleAction("createPortfolioWatchlists", createPortfolioWatchlists)}
+            disabled={loading === "createPortfolioWatchlists"}
+            className="w-full px-4 py-2 text-sm bg-purple-600 text-white rounded hover:opacity-90 disabled:opacity-50 text-left"
+          >
+            {loading === "createPortfolioWatchlists" ? "Creating..." : "Create Portfolio Watchlist"}
+          </button>
+          {results.createPortfolioWatchlists && (
+            <div className="text-xs text-muted pl-4 mt-2 max-h-20 overflow-y-auto">
+              {results.createPortfolioWatchlists}
+            </div>
+          )}
+        </div>
+      </div>
+      )}
 
       {/* Summary */}
       <div className="text-xs text-muted bg-surface rounded p-3">

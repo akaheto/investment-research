@@ -1,8 +1,9 @@
 "use server";
 
 import { db, getRawClient } from "@/db/client";
-import { accounts, instruments } from "@/db/schema";
+import { accounts, instruments, watchlist, holdings, planMenu, proxyMap } from "@/db/schema";
 import { seedTransamericaFunds, loadMainAccountHoldings, loadManagementStaffIRAHoldings } from "@/app/portfolio/fund-actions";
+import { eq, inArray } from "drizzle-orm";
 
 /**
  * Create Main 403b account and load holdings
@@ -191,5 +192,79 @@ export async function getSetupStatus() {
     };
   } catch (error) {
     return { accountsSeeded: false, fundsSeeded: false };
+  }
+}
+
+/**
+ * Create portfolio-based watchlists from holdings
+ * Groups by institution and creates one watchlist per institution
+ */
+export async function createPortfolioWatchlists() {
+  try {
+    const allAccounts = await db.select().from(accounts);
+
+    if (allAccounts.length === 0) {
+      return { ok: false, message: "No accounts found" };
+    }
+
+    // Group accounts by institution
+    const accountsByInstitution = allAccounts.reduce(
+      (acc, account) => {
+        const inst = account.institution || "Unknown";
+        if (!acc[inst]) acc[inst] = [];
+        acc[inst].push(account.id);
+        return acc;
+      },
+      {} as Record<string, number[]>
+    );
+
+    let totalAdded = 0;
+
+    // For each institution, create watchlist from holdings
+    for (const [institution, accountIds] of Object.entries(accountsByInstitution)) {
+      // Get all holdings for these accounts
+      const accountHoldings = await db
+        .select({ planFundId: holdings.planFundId })
+        .from(holdings)
+        .where(inArray(holdings.accountId, accountIds));
+
+      if (accountHoldings.length === 0) continue;
+
+      // Get unique planFundIds and map to instrumentIds
+      const planFundIds = [...new Set(accountHoldings.map(h => h.planFundId))];
+      const mappings = await db
+        .select({ planFundId: proxyMap.planFundId, instrumentId: proxyMap.instrumentId })
+        .from(proxyMap)
+        .where(inArray(proxyMap.planFundId, planFundIds));
+
+      // Get existing watchlist entries for this portfolio
+      const watchlistType = `portfolio_${institution.toLowerCase().replace(/\s+/g, "_")}`;
+      const existingEntries = await db
+        .select({ instrumentId: watchlist.instrumentId })
+        .from(watchlist)
+        .where(eq(watchlist.watchlistType, watchlistType));
+      const existingIds = new Set(existingEntries.map(e => e.instrumentId));
+
+      // Add new entries
+      const newEntries = mappings
+        .filter(m => !existingIds.has(m.instrumentId))
+        .map(m => ({
+          instrumentId: m.instrumentId,
+          watchlistType,
+          addedAt: new Date().toISOString(),
+        }));
+
+      if (newEntries.length > 0) {
+        await db.insert(watchlist).values(newEntries);
+        totalAdded += newEntries.length;
+      }
+    }
+
+    return {
+      ok: true,
+      message: `Created portfolio watchlists. Added ${totalAdded} investments total.`,
+    };
+  } catch (error) {
+    return { ok: false, message: `Failed: ${String(error)}` };
   }
 }

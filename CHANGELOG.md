@@ -6,6 +6,21 @@ All notable changes to this project. One entry per deliverable.
 
 ### 2026-08-06
 
+- **Feature** — Screener column customization (Epic I4)
+  Dropdown menu in PageHeader lets users toggle Valuation/Growth/Quality/
+  Momentum columns. Choice persisted to localStorage across page reloads.
+  Useful for focusing analysis (e.g., "show only Score + Valuation").
+
+- **Feature** — Dashboard sector-composition donut chart (Epic I3)
+  Groups watchlist by sector, displays count per sector. Recharts PieChart
+  with inner radius (donut effect). Caps at 8 sectors; folds excess into
+  "Other". Tooltip + Legend. Card: 4 columns on lg, 12 on mobile.
+
+- **Feature** — Watchlist notes & target-price inline editor (Epic I1)
+  📝 icon per row opens modal for editing notes (textarea) + target price
+  (number input). Saves to watchlist.note / watchlist.targetPrice. Client-
+  side validation: rejects <=0 targets. Supports empty notes (clears field).
+
 - **Feature** — Dashboard refresh-status badge (Epic I2)
   New getLastRefreshSummary() action queries auditEvents for latest data_refresh
   timestamp. Dashboard header displays "Last updated 2h ago" + next cron time

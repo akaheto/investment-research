@@ -1,7 +1,7 @@
 "use server";
 
 import { db, getRawClient } from "@/db/client";
-import { accounts } from "@/db/schema";
+import { accounts, instruments } from "@/db/schema";
 import { seedTransamericaFunds, loadMainAccountHoldings, loadManagementStaffIRAHoldings } from "@/app/portfolio/fund-actions";
 
 /**
@@ -174,5 +174,22 @@ export async function initializeEconomicCalendar() {
     return await initCalendar();
   } catch (error) {
     return { ok: false, error: String(error) };
+  }
+}
+
+/**
+ * Check setup completion status
+ */
+export async function getSetupStatus() {
+  try {
+    const accountCount = await db.select().from(accounts);
+    const instrumentCount = await db.select().from(instruments);
+
+    return {
+      accountsSeeded: accountCount.length > 0,
+      fundsSeeded: instrumentCount.length > 0,
+    };
+  } catch (error) {
+    return { accountsSeeded: false, fundsSeeded: false };
   }
 }

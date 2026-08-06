@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   seedFunds,
   setupMainAccount,
@@ -8,12 +8,23 @@ import {
   generateAllSuggestions,
   assessAllEventImpacts,
   initializeEconomicCalendar,
+  getSetupStatus,
 } from "@/app/settings/actions";
+
+interface SetupStatus {
+  accountsSeeded: boolean;
+  fundsSeeded: boolean;
+}
 
 export function AdminPanel() {
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, string>>({});
   const [expandedSection, setExpandedSection] = useState<"setup" | "analysis" | null>("setup");
+  const [status, setStatus] = useState<SetupStatus>({ accountsSeeded: false, fundsSeeded: false });
+
+  useEffect(() => {
+    getSetupStatus().then(setStatus);
+  }, []);
 
   const handleAction = async (label: string, action: () => Promise<{ message?: string; ok?: boolean; error?: string }>) => {
     setLoading(label);
@@ -38,9 +49,12 @@ export function AdminPanel() {
     }
   };
 
+  const setupComplete = status.fundsSeeded && status.accountsSeeded;
+
   return (
     <div className="space-y-4">
-      {/* Setup Section */}
+      {/* Setup Section — Only show if not complete */}
+      {!setupComplete && (
       <div className="border border-hairline rounded-lg overflow-hidden">
         <button
           onClick={() => setExpandedSection(expandedSection === "setup" ? null : "setup")}
@@ -93,6 +107,7 @@ export function AdminPanel() {
           </div>
         )}
       </div>
+      )}
 
       {/* Analysis Section */}
       <div className="border border-hairline rounded-lg overflow-hidden">

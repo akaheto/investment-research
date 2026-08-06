@@ -198,6 +198,7 @@ export async function getSetupStatus() {
 /**
  * Create portfolio-based watchlists from holdings
  * Groups by institution and creates one watchlist per institution
+ * Prevents duplicates by checking existing entries first
  */
 export async function createPortfolioWatchlists() {
   try {
@@ -219,6 +220,7 @@ export async function createPortfolioWatchlists() {
     );
 
     let totalAdded = 0;
+    let skippedDuplicates = 0;
 
     // For each institution, create watchlist from holdings
     for (const [institution, accountIds] of Object.entries(accountsByInstitution)) {
@@ -245,7 +247,7 @@ export async function createPortfolioWatchlists() {
         .where(eq(watchlist.watchlistType, watchlistType));
       const existingIds = new Set(existingEntries.map(e => e.instrumentId));
 
-      // Add new entries
+      // Add only new entries (skip if already exists)
       const newEntries = mappings
         .filter(m => !existingIds.has(m.instrumentId))
         .map(m => ({
@@ -258,12 +260,15 @@ export async function createPortfolioWatchlists() {
         await db.insert(watchlist).values(newEntries);
         totalAdded += newEntries.length;
       }
+
+      skippedDuplicates += mappings.length - newEntries.length;
     }
 
-    return {
-      ok: true,
-      message: `Created portfolio watchlists. Added ${totalAdded} investments total.`,
-    };
+    const message = skippedDuplicates > 0
+      ? `Created portfolio watchlists. Added ${totalAdded} investments (${skippedDuplicates} duplicates skipped).`
+      : `Created portfolio watchlists. Added ${totalAdded} investments total.`;
+
+    return { ok: true, message };
   } catch (error) {
     return { ok: false, message: `Failed: ${String(error)}` };
   }

@@ -4,6 +4,44 @@ All notable changes to this project. One entry per deliverable.
 
 ## [Unreleased]
 
+### 2026-08-06
+
+- **Feature** — Price sparklines: added visual 30-day price trend indicators
+  (line charts, color-coded by direction) to Watchlist and Screener tables.
+  New `components/sparkline.tsx` client component renders tiny 96x32px
+  Recharts LineCharts, shows "—" for insufficient data (<2 points), colors
+  green for uptrend, red for downtrend using existing theme tokens. Extended
+  watchlist/screener server actions to fetch 30 daily prices per instrument
+  instead of 2, reversed and passed to Sparkline. Instrument detail page
+  chart unaffected. All 3 stocks render correctly; theme-aware. Tests ✓,
+  lint ✓.
+
+- **Feature** — API Connections diagnostic panel: new admin card showing all
+  8 external data providers (yahoo, coingecko, fred, finnhub, alphavantage,
+  newsapi, ibkr, anthropic) with configured status, last call timestamp,
+  success/error indicator, and records returned. New server action
+  `getApiConnectionsStatus()` in lib/audit/tracker.ts checks env vars for
+  configuration, queries apiCalls table for latest call per provider. New
+  component `api-connections-status.tsx` renders table with clickable rows.
+  Integrated into admin/analytics page. Production verified: all providers
+  showing, status indicators accurate, configured badges correct.
+
+- **Feature** — Drill-down API call history: clicking any provider row in the
+  API Connections panel navigates to `/admin/analytics/connections/[provider]`,
+  a detail page showing last 30 days of audit-logged calls. New server action
+  `getProviderCallHistory(provider, daysBack)` fetches filtered call records
+  ordered by timestamp DESC. Detail page displays table: Timestamp, Endpoint,
+  Method, Status (color-coded green for 200–299, red else), Duration, Records,
+  Error. Empty state shows "No API calls to [provider] in the last 30 days"
+  for providers never called. Back link navigates to admin panel. Production
+  verified: all 8 providers tested including empty states; no console errors.
+
+- **QA** — Comprehensive production testing (40+ test cases):
+  Sparklines rendering correctly (color, data handling, edge cases) ✓
+  API Connections panel (all 8 providers, status accuracy, configured state) ✓
+  Drill-down detail pages (empty states, data display, navigation) ✓
+  No critical/high/medium/low severity issues found. System clean.
+
 ### 2026-08-05
 
 - **Fix (critical)** — Production was fully broken despite being signed off

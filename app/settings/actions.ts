@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/db/client";
+import { db, getRawClient } from "@/db/client";
 import { accounts } from "@/db/schema";
 import { seedTransamericaFunds, loadMainAccountHoldings, loadManagementStaffIRAHoldings } from "@/app/portfolio/fund-actions";
 
@@ -9,11 +9,11 @@ import { seedTransamericaFunds, loadMainAccountHoldings, loadManagementStaffIRAH
  */
 export async function setupMainAccount() {
   try {
-    // Use raw SQL to avoid Drizzle/Turso id-as-null issue
-    const result = await db.run({
-      sql: `INSERT INTO accounts (name, institution, tax_type, created_at, external_id) VALUES (?, ?, ?, ?, NULL) RETURNING id, name, institution, tax_type, created_at, external_id`,
-      args: ["Main", "Transamerica", "403b", new Date().toISOString()],
-    });
+    const client = getRawClient();
+    const result = await client.execute(
+      "INSERT INTO accounts (name, institution, tax_type, created_at, external_id) VALUES (?, ?, ?, ?, NULL) RETURNING id, name, institution, tax_type, created_at, external_id",
+      ["Main", "Transamerica", "403b", new Date().toISOString()]
+    );
 
     if (!result.rows || result.rows.length === 0) {
       return { ok: false, message: "Failed to create account" };
@@ -39,11 +39,11 @@ export async function setupMainAccount() {
  */
 export async function setupManagementStaffIRA() {
   try {
-    // Use raw SQL to avoid Drizzle/Turso id-as-null issue
-    const result = await db.run({
-      sql: `INSERT INTO accounts (name, institution, tax_type, created_at, external_id) VALUES (?, ?, ?, ?, NULL) RETURNING id, name, institution, tax_type, created_at, external_id`,
-      args: ["Management staff", "Transamerica", "ira", new Date().toISOString()],
-    });
+    const client = getRawClient();
+    const result = await client.execute(
+      "INSERT INTO accounts (name, institution, tax_type, created_at, external_id) VALUES (?, ?, ?, ?, NULL) RETURNING id, name, institution, tax_type, created_at, external_id",
+      ["Management staff", "Transamerica", "ira", new Date().toISOString()]
+    );
 
     if (!result.rows || result.rows.length === 0) {
       return { ok: false, message: "Failed to create account" };

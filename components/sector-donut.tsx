@@ -38,14 +38,21 @@ export function SectorDonut({ data }: SectorDonutProps) {
           fill="#8884d8"
           paddingAngle={2}
           dataKey="count"
-          label={({ sector, count }) => `${sector} (${count})`}
+          label={(props) => {
+            const payload = (props as { payload?: { sector?: string; count?: number } }).payload;
+            if (!payload?.sector || !payload?.count) return "";
+            return `${payload.sector} (${payload.count})`;
+          }}
         >
           {sectors.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
         <Tooltip
-          formatter={(value) => `${value} instrument${value > 1 ? "s" : ""}`}
+          formatter={(value) => {
+            const count = typeof value === "number" ? value : 0;
+            return `${count} instrument${count > 1 ? "s" : ""}`;
+          }}
           contentStyle={{ backgroundColor: "var(--surface)", border: "1px solid var(--hairline)" }}
         />
         <Legend wrapperStyle={{ paddingTop: "20px" }} />

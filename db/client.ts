@@ -25,3 +25,17 @@ export function createDb(url?: string) {
 
 /** App-wide singleton; tests create their own via createDb(":memory:"). */
 export const db = createDb();
+
+/** Access raw libSQL client for direct SQL execution (e.g., auto-increment workarounds) */
+export function getRawClient() {
+  const dbUrl =
+    process.env.TURSO_DATABASE_URL?.trim() ||
+    process.env.DATABASE_URL?.trim() ||
+    "file:local.db";
+  const authToken = process.env.TURSO_AUTH_TOKEN?.trim();
+
+  return createClient({
+    url: dbUrl,
+    ...(authToken && { authToken }),
+  });
+}

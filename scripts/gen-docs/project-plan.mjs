@@ -60,6 +60,23 @@ const epicF = [
   ["Q4", "Full production audit: every page/feature exercised against the live deployment, not local/dev, with real evidence (curl status codes, runtime logs, DB reads) — not screenshots alone", DONE, "Found and fixed 3 production-breaking infra bugs (wrong DB env var name → every query silently failing; Turso had zero applied migrations; 2 migration files used non-portable multi-statement SQL) plus 11 further issues on re-audit: prices/factorScores computed but never written (Screener/Watchlist could never show real data); deprecated Claude model (EOL the next day); G5 narrative assessments generated via a real paid API call but never displayed; /instrument/[symbol] and /portfolio/[accountId] permanently broken (Next.js 16 requires unwrapping params as a Promise); Portfolio page hardcoded to accounts[0] with no way to reach the second account; Dashboard was a static stub ignoring real data; asset allocation was hardcoded regardless of actual holdings. All fixed and re-verified in production — 2026-08-05. CLAUDE.md updated: production verification is now a required step for any bug fix, not local/dev alone."],
 ];
 
+const epicH = [
+  ["H1", "Off-canvas nav drawer + 48px top app bar for <1024px viewports (hamburger, wordmark, theme toggle)", TODO, "Root-cause fix for the permanently-docked 220px sidebar eating ~55% of a phone viewport. New components/mobile-nav-bar.tsx, components/nav-drawer.tsx, components/nav-icons.tsx (icons extracted from sidebar.tsx, shared not duplicated). Full spec: MOBILE_AND_UX_ENHANCEMENT_PLAN.md Part 1. Est. 6-8h."],
+  ["H2", "Hide desktop rail below lg; wire drawer into app/layout.tsx; reduce page gutters to 16px below lg", TODO, "components/sidebar.tsx gets `hidden lg:flex`; app/layout.tsx padding becomes px-4 py-4 lg:px-6 lg:py-6. Plan §1.3-1.4. Est. included in H1."],
+  ["H3", "Responsive polish: Markets stat-block stacking, table scroll-affordance fade, 44px touch targets on mobile-reachable controls", TODO, "app/markets/page.tsx grid-cols-1 sm:grid-cols-3 on the macro-regime stat row; trailing-edge mask-image fade on Watchlist/Screener table wrappers; components/button.tsx gains a touch-size variant. Plan §2. Est. 3-4h."],
+  ["H4 (optional)", "Desktop/tablet icon-only collapsed rail with localStorage-persisted preference", TODO, "Closes the gap on the pre-existing (previously inaccurate) VISUAL_STYLE_GUIDE §7.2 'collapsible to icons' claim. Not required to fix the mobile bug (H1-H3 already do that) — nice-to-have. Plan §1.5. Est. 2h."],
+];
+
+const epicI = [
+  ["I1", "Watchlist notes & target-price inline editor", TODO, "watchlist.note / targetPrice columns exist but have no UI. New server actions + components/watchlist-note-editor.tsx. Plan §4.1. Est. 3h."],
+  ["I2", "Dashboard refresh-status badge (\"Last updated 2h ago\")", TODO, "getLastRefreshSummary() reuses existing auditEvents queries. Plan §4.2. Est. 2h."],
+  ["I3", "Dashboard sector-composition donut chart", TODO, "getSectorBreakdown() groups watchlist by instruments.sector; components/sector-donut.tsx reuses the validated Recharts + categorical-palette pattern from the instrument page. Plan §4.3. Est. 4h."],
+  ["I4", "Screener column customization (show/hide metric columns, localStorage-persisted)", TODO, "components/column-picker.tsx; no DB change — single-user local app, localStorage is sufficient for v1. Plan §4.4. Est. 5h."],
+  ["I5", "Watchlist collections/folders", TODO, "Only item in this epic requiring a schema change: new collections table + watchlist.collectionId FK. Must verify migration statement-breakpoint markers before Turso apply (see Epic F/Q4 lesson). Plan §4.5. Est. 6h."],
+  ["I6", "Instrument detail scorecard reorder (composite + 4 factors above the fold on mobile)", TODO, "Primarily a JSX reorder, not new data — factor_scores already fetched on this page. Plan §4.6. Est. 6h."],
+  ["I7", "News page redesign: sector tabs, Your Holdings/Trending sections, search, sentiment badges", TODO, "Full standalone spec: NEWS_PAGE_REDESIGN.md (delivered 2026-08-06). Mobile addendum (scrollable tab bar) folded in via Plan §4.7. Est. 23h — largest item in this epic."],
+];
+
 const changelog = [
   ["[init]", "Project plan created from starter template. No code written yet."],
   ["2026-08-03", "A1/A2: goal + stack confirmed (free-tier data behind provider abstraction, Vercel-deployable, rules-based signals + LLM narrative later). Epics B–F defined."],
@@ -85,6 +102,7 @@ const changelog = [
   ["2026-08-05", "Q4: full production audit (see Epic F/Q table) — 11 further issues found and fixed, most notably that prices and factor scores were computed on every refresh but never written to the database, so Screener/Watchlist could never show real data through any button in the app. Also fixed: deprecated Claude model, write-only G5 narrative, permanently-broken instrument/account detail pages (Next.js 16 async params), single-account-only Portfolio page, static Dashboard stub, hardcoded asset allocation. CLAUDE.md now requires production verification (not local/dev) for any bug fix."],
   ["2026-08-05", "Enhancement: watchlist accepts a company name, not just a ticker — addToWatchlist() resolves free text via the equity provider's symbol search and rejects unmatched input, instead of blindly creating an instrument from whatever was typed."],
   ["2026-08-06", "Enhancement: price sparklines added to Watchlist and Screener tables (30-day trend line, green/red by direction). Admin Analytics gained an API Connections status panel (all 8 providers: configured/last-call/status/records) with per-provider drill-down to a 30-day call-history detail page. Full production test pass: 40+ cases, 0 issues found. Enhancement backlog reviewed and expanded (ENHANCEMENTS.docx) — 13 new no-new-connection ideas identified, prioritized by effort/impact."],
+  ["2026-08-06", "Planning pass (Opus, per user's model-tiering workflow — see CLAUDE.md): user reported the live mobile view was unusable (4 screenshots supplied). Root cause diagnosed — components/sidebar.tsx's 220px rail has zero responsive treatment and is permanently docked, leaving ~90-110px of usable width on a phone. Two new epics added: Epic H (Mobile Responsive Redesign — off-canvas drawer nav, corrects a VISUAL_STYLE_GUIDE claim that was never actually built) and Epic I (UX Enhancement Backlog — the 7 no-new-connection shortlist items from the priority matrix, now spec'd to build-ready detail). Full plan: MOBILE_AND_UX_ENHANCEMENT_PLAN.md. Per user instruction, implementation is queued for a lighter model; this pass is planning/documentation only — no application code changed."],
 ];
 
 const statusRow = ([id, d, s, n]) => [id, d, { text: s }, n];
@@ -125,6 +143,12 @@ await writeDoc("PROJECT_PLAN.docx", [
   table(["#", "Deliverable", "Status", "Notes"], epicG.map(statusRow), { widths: [6, 54, 8, 32] }),
   h3("Epic F — Deployment, QA & Hardening (runs last)"),
   table(["#", "Deliverable", "Status", "Notes"], epicF.map(statusRow), { widths: [6, 54, 8, 32] }),
+  h3("Epic H — Mobile Responsive Redesign"),
+  p("Planned 2026-08-06 in response to user-reported unusable mobile view (screenshots). Full spec: MOBILE_AND_UX_ENHANCEMENT_PLAN.md. Queued for a lighter model per the project's model-tiering convention — the architecture decision is made; execution is routine."),
+  table(["#", "Deliverable", "Status", "Notes"], epicH.map(statusRow), { widths: [6, 54, 8, 32] }),
+  h3("Epic I — UX Enhancement Backlog (no new external connections)"),
+  p("The 'no-new-connection shortlist' from the 2026-08-06 enhancement review, spec'd to build-ready detail in MOBILE_AND_UX_ENHANCEMENT_PLAN.md §4. Independently shippable — order in that document is a recommendation, not a dependency chain (except I7, which is large enough to plan as its own block using the standalone NEWS_PAGE_REDESIGN.md)."),
+  table(["#", "Deliverable", "Status", "Notes"], epicI.map(statusRow), { widths: [6, 54, 8, 32] }),
 
   h1("4. Open Questions / Assumptions"),
   bullet("FRED API key: received from user 2026-08-03, stored in .env (gitignored). B5 unblocked."),

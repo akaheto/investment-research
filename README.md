@@ -42,6 +42,14 @@ Project docs are **generated** Word files — edit the module in
 Dev-facing docs stay in the repo: this README, `CHANGELOG.md`, and
 `CLAUDE.md` (working agreement + lessons learned).
 
+Standalone build-ready feature specs (referenced from PROJECT_PLAN.docx /
+ENHANCEMENTS.docx by name, kept as plain markdown since they're
+implementation handoffs, not living status docs):
+
+- `MOBILE_AND_UX_ENHANCEMENT_PLAN.md` — Epic H (mobile responsive redesign:
+  off-canvas nav drawer) and Epic I (7-item no-new-connection UX backlog)
+- `NEWS_PAGE_REDESIGN.md` — Epic I7, news page overhaul in detail
+
 ## Project conventions
 
 - One deliverable at a time; self-verified before "done"; docs updated

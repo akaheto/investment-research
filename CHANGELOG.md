@@ -6,6 +6,32 @@ All notable changes to this project. One entry per deliverable.
 
 ### 2026-08-06
 
+- **Planning** — Mobile responsive redesign + UX enhancement backlog planned
+  (Opus, per the project's model-tiering convention — implementation queued
+  for a lighter model). User reported the live mobile view was unusable (4
+  screenshots: Screener/Watchlist/Markets/Dashboard). Root-caused:
+  `components/sidebar.tsx` renders a fixed 220px rail with zero responsive
+  treatment, permanently docked at every viewport width — on a ~390px phone
+  this leaves ~90–110px of usable content width, which is the direct cause
+  of every visual symptom in the screenshots (text wrapping mid-word, tables
+  showing only one column). Also found: `VISUAL_STYLE_GUIDE.docx` §5 already
+  claimed the nav was "collapsible to icons" — never actually built; corrected.
+  Full build-ready plan written: `MOBILE_AND_UX_ENHANCEMENT_PLAN.md` — Part 1
+  (off-canvas drawer + top app bar below 1024px, chosen over an icon-rail or
+  bottom-tab-bar after evaluating both), Part 2 (responsive polish: stat-block
+  stacking, table scroll-affordance, touch targets), Part 4 (specs for all 7
+  "no-new-connection" backlog items: watchlist notes/target-price UI, dashboard
+  refresh badge, dashboard sector chart, screener column picker, watchlist
+  collections, instrument scorecard reorder, news redesign). Wired into the
+  real project docs, not left standalone: `PROJECT_PLAN.docx` gained **Epic H
+  — Mobile Responsive Redesign** (H1–H4) and **Epic I — UX Enhancement
+  Backlog** (I1–I7), all status Not Started; `VISUAL_STYLE_GUIDE.docx` gained
+  new §7 Responsive/Mobile Design (breakpoint contract: <1024px = drawer nav,
+  ≥1024px = unchanged desktop rail; 44px touch-target rule; corrected nav
+  pattern); `ENHANCEMENTS.docx` backlog entries updated to point at the specs.
+  No application code changed in this pass — planning/documentation only.
+  Lint clean, 56/58 tests passing (2 skipped, pre-existing).
+
 - **Feature** — Price sparklines: added visual 30-day price trend indicators
   (line charts, color-coded by direction) to Watchlist and Screener tables.
   New `components/sparkline.tsx` client component renders tiny 96x32px

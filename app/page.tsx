@@ -1,9 +1,11 @@
 import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
+import { SectorDonut } from "@/components/sector-donut";
 import { getMarketIndices } from "./markets/actions";
 import { getWatchlistWithQuotes } from "./watchlist/actions";
 import { getLatestNews } from "./news/actions";
 import { getLastRefreshSummary } from "@/lib/audit/tracker";
+import { getSectorBreakdown } from "./dashboard/actions";
 import { formatRelativeTime } from "@/lib/format-time";
 import Link from "next/link";
 
@@ -15,6 +17,7 @@ export default async function DashboardPage() {
   let watchlist: Awaited<ReturnType<typeof getWatchlistWithQuotes>> = [];
   let news: Awaited<ReturnType<typeof getLatestNews>> = { ok: false, items: [] };
   let lastRefreshAt: string | null = null;
+  let sectorBreakdown: Awaited<ReturnType<typeof getSectorBreakdown>> = [];
 
   try {
     const results = await Promise.all([
@@ -22,11 +25,13 @@ export default async function DashboardPage() {
       getWatchlistWithQuotes(),
       getLatestNews(5),
       getLastRefreshSummary(),
+      getSectorBreakdown(),
     ]);
     indices = results[0];
     watchlist = results[1];
     news = results[2];
     lastRefreshAt = results[3].lastRefreshAt;
+    sectorBreakdown = results[4];
   } catch (error) {
     console.error("❌ Failed to load dashboard data:", error);
   }
@@ -84,6 +89,9 @@ export default async function DashboardPage() {
           ) : (
             <EmptyState>Empty — add instruments under Watchlist.</EmptyState>
           )}
+        </Card>
+        <Card title="Sector Composition" className="col-span-12 lg:col-span-4">
+          <SectorDonut data={sectorBreakdown} />
         </Card>
         <Card title="News" className="col-span-12">
           {headlines.length > 0 ? (

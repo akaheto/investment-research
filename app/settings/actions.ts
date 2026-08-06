@@ -3,6 +3,7 @@
 import { db, getRawClient } from "@/db/client";
 import { accounts, instruments, watchlist, holdings, planMenu, proxyMap } from "@/db/schema";
 import { seedTransamericaFunds, loadMainAccountHoldings, loadManagementStaffIRAHoldings, refreshAllHoldings } from "@/app/portfolio/fund-actions";
+import { extractHoldingsFromStatement, validateExtractedHoldings } from "./statement-actions";
 import { eq, inArray } from "drizzle-orm";
 
 /**
@@ -235,6 +236,144 @@ async function ensureWatchlistTypeColumn() {
  */
 export async function refreshAllAccountHoldings() {
   return await refreshAllHoldings();
+}
+
+/**
+ * Get list of all accounts for statement uploader
+ */
+export async function getAccountsList() {
+  try {
+    const allAccounts = await db.select().from(accounts);
+    return {
+      ok: true,
+      accounts: allAccounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+      })),
+    };
+  } catch (error) {
+    console.error("Failed to fetch accounts:", error);
+    return { ok: false, accounts: [] };
+  }
+}
+
+/**
+ * Extract holdings from statement screenshot
+ * Returns extracted data for user review before loading into database
+ */
+export async function analyzeStatementScreenshot(
+  imageBase64: string,
+  mediaType: "image/png" | "image/jpeg" | "image/webp" = "image/png"
+) {
+  try {
+    console.log("📄 Analyzing statement screenshot...");
+
+    // Extract holdings from image
+    const extraction = await extractHoldingsFromStatement(imageBase64, mediaType);
+
+    if (!extraction.ok) {
+      return { ok: false, error: extraction.error || extraction.message };
+    }
+
+    // Validate against known funds
+    const validation = await validateExtractedHoldings(extraction.holdings || []);
+
+    return {
+      ok: true,
+      holdings: validation.validated,
+      statementDate: extraction.statementDate,
+      accountName: extraction.accountName,
+      warnings: validation.warnings,
+      message: `✅ Extracted ${validation.validated.length} holdings. Review below before confirming.`,
+    };
+  } catch (error) {
+    console.error("Statement analysis failed:", error);
+    return {
+      ok: false,
+      error: `Analysis failed: ${String(error)}`,
+    };
+  }
+}
+
+/**
+ * Load extracted holdings from statement into database
+ * Clears old holdings and loads new ones confirmed by user
+ */
+export async function loadExtractedHoldings(extractedHoldingsJson: string, statementDate?: string) {
+  try {
+    console.log("💾 Loading extracted holdings into database...");
+
+    // Parse the extracted holdings JSON
+    let extracted;
+    try {
+      extracted = JSON.parse(extractedHoldingsJson);
+    } catch (e) {
+      return { ok: false, error: "Invalid holdings data" };
+    }
+
+    if (!Array.isArray(extracted) || extracted.length === 0) {
+      return { ok: false, error: "No holdings to load" };
+    }
+
+    // Get all accounts to determine which one(s) to update
+    const allAccounts = await db.select().from(accounts);
+    if (allAccounts.length === 0) {
+      return { ok: false, error: "No accounts found" };
+    }
+
+    let totalLoaded = 0;
+    const results = [];
+
+    // For now, load into first account (Main 403b)
+    // In future, could detect from statement date or prompt user
+    const targetAccount = allAccounts[0];
+
+    console.log(`📋 Loading ${extracted.length} holdings into ${targetAccount.name}...`);
+
+    // Clear existing holdings for this account
+    await db.delete(require("@/db/schema").fundHoldings).where(
+      eq(require("@/db/schema").fundHoldings.accountId, targetAccount.id)
+    );
+
+    // Insert new holdings
+    const { funds: fundsTable, fundHoldings: fundHoldingsTable } = await import("@/db/schema");
+
+    for (const holding of extracted) {
+      // Find fund by name
+      const fund = await db
+        .select()
+        .from(fundsTable)
+        .where(eq(fundsTable.fundName, holding.fundName))
+        .limit(1);
+
+      if (fund.length === 0) {
+        console.warn(`Fund not found: ${holding.fundName}`);
+        continue;
+      }
+
+      // Insert holding
+      await db.insert(fundHoldingsTable).values({
+        accountId: targetAccount.id,
+        fundId: fund[0].id,
+        unitsOwned: holding.units,
+        balanceAmount: holding.balance,
+        allocationPercent: holding.percent,
+        asOf: statementDate || new Date().toISOString().split("T")[0],
+      });
+
+      totalLoaded++;
+    }
+
+    return {
+      ok: true,
+      count: totalLoaded,
+      account: targetAccount.name,
+      message: `✅ Loaded ${totalLoaded} holdings into ${targetAccount.name} (as of ${statementDate || "today"})`,
+    };
+  } catch (error) {
+    console.error("Failed to load extracted holdings:", error);
+    return { ok: false, error: `Load failed: ${String(error)}` };
+  }
 }
 
 export async function createPortfolioWatchlists() {

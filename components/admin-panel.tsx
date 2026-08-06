@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { StatementUploader } from "./statement-uploader";
+import type { ExtractedHolding } from "@/app/settings/statement-actions";
 import {
   seedFunds,
   setupMainAccount,
@@ -11,6 +13,8 @@ import {
   getSetupStatus,
   createPortfolioWatchlists,
   refreshAllAccountHoldings,
+  loadExtractedHoldings,
+  getAccountsList,
 } from "@/app/settings/actions";
 
 interface SetupStatus {
@@ -19,14 +23,23 @@ interface SetupStatus {
   portfolioWatchlistCreated?: boolean;
 }
 
+interface Account {
+  id: number;
+  name: string;
+}
+
 export function AdminPanel() {
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, string>>({});
   const [expandedSection, setExpandedSection] = useState<"setup" | "analysis" | null>("setup");
   const [status, setStatus] = useState<SetupStatus>({ accountsSeeded: false, fundsSeeded: false });
+  const [accounts, setAccounts] = useState<Account[]>([]);
 
   useEffect(() => {
     getSetupStatus().then(setStatus);
+    getAccountsList().then((result) => {
+      if (result.ok) setAccounts(result.accounts || []);
+    });
   }, []);
 
   const handleAction = async (label: string, action: () => Promise<{ message?: string; ok?: boolean; error?: string }>) => {
@@ -207,20 +220,54 @@ export function AdminPanel() {
       {/* Refresh Holdings — Bi-weekly updates */}
       <div className="border border-hairline rounded-lg overflow-hidden">
         <div className="px-4 py-3 bg-surface border-b border-hairline space-y-2">
-          <p className="font-semibold text-sm text-ink">🔄 Refresh Holdings</p>
-          <p className="text-xs text-muted">Update account holdings after receiving new statements (every 2 weeks). First, update quantities in fund-actions.ts</p>
+          <p className="font-semibold text-sm text-ink">🔄 Holdings Update</p>
+          <p className="text-xs text-muted">Every 2 weeks: Upload statement screenshot to extract holdings automatically, or manually update fund-actions.ts</p>
         </div>
-        <div className="p-4">
-          <button
-            onClick={() => handleAction("refreshHoldings", refreshAllAccountHoldings)}
-            disabled={loading === "refreshHoldings"}
-            className="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded hover:opacity-90 disabled:opacity-50 text-left"
-          >
-            {loading === "refreshHoldings" ? "Refreshing..." : "Refresh All Holdings"}
-          </button>
-          {results.refreshHoldings && (
-            <div className="text-xs text-muted pl-4 mt-2 max-h-20 overflow-y-auto">
-              {results.refreshHoldings}
+        <div className="p-4 space-y-4">
+          {/* Statement Uploader */}
+          <StatementUploader
+            accounts={accounts}
+            onConfirm={async (holdings, accountId, statementDate) => {
+              setLoading("loadStatementHoldings");
+              try {
+                const result = await loadExtractedHoldings(
+                  JSON.stringify(holdings),
+                  statementDate
+                );
+                setResults((prev) => ({
+                  ...prev,
+                  loadStatementHoldings: result.message || "Loaded",
+                }));
+              } catch (error) {
+                setResults((prev) => ({
+                  ...prev,
+                  loadStatementHoldings: `Error: ${String(error)}`,
+                }));
+              }
+              setLoading(null);
+            }}
+          />
+
+          {/* Manual Refresh Alternative */}
+          <div className="pt-3 border-t border-hairline space-y-2">
+            <p className="text-xs font-medium text-ink-2">Or manually refresh:</p>
+            <button
+              onClick={() => handleAction("refreshHoldings", refreshAllAccountHoldings)}
+              disabled={loading === "refreshHoldings"}
+              className="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded hover:opacity-90 disabled:opacity-50 text-left"
+            >
+              {loading === "refreshHoldings" ? "Refreshing..." : "Refresh All Holdings"}
+            </button>
+            {results.refreshHoldings && (
+              <div className="text-xs text-muted pl-4 max-h-20 overflow-y-auto">
+                {results.refreshHoldings}
+              </div>
+            )}
+          </div>
+
+          {results.loadStatementHoldings && (
+            <div className="text-xs text-muted pl-4 max-h-20 overflow-y-auto">
+              {results.loadStatementHoldings}
             </div>
           )}
         </div>

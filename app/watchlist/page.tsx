@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { Sparkline } from "@/components/sparkline";
 import { WatchlistNoteEditor } from "@/components/watchlist-note-editor";
 import { useState, useEffect } from "react";
-import { addToWatchlist, removeFromWatchlist, getWatchlistWithQuotes } from "./actions";
+import { addToWatchlist, removeFromWatchlist, getWatchlistWithQuotes, getWatchlistTypes } from "./actions";
 import type { WatchlistQuote } from "./actions";
 import Link from "next/link";
 
@@ -22,15 +22,30 @@ export default function WatchlistPage() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("user");
+  const [availableTabs, setAvailableTabs] = useState<string[]>(["user"]);
 
-  // Load watchlist on mount
+  // Load watchlist types and quotes on mount
   useEffect(() => {
+    loadTabs();
     loadWatchlist();
   }, []);
 
+  // Reload watchlist when tab changes
+  useEffect(() => {
+    loadWatchlist();
+  }, [activeTab]);
+
+  async function loadTabs() {
+    const result = await getWatchlistTypes();
+    if (result.ok) {
+      setAvailableTabs(result.types);
+    }
+  }
+
   async function loadWatchlist() {
     setLoading(true);
-    const quotes = await getWatchlistWithQuotes();
+    const quotes = await getWatchlistWithQuotes(activeTab);
     setItems(quotes);
     setLoading(false);
   }
@@ -58,28 +73,67 @@ export default function WatchlistPage() {
     setAdding(false);
   }
 
+  function formatTabName(type: string): string {
+    if (type === "user") return "Main Watchlist";
+    // portfolio_transamerica → Transamerica
+    return type
+      .replace("portfolio_", "")
+      .split("_")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  }
+
   return (
     <>
       <PageHeader title="Watchlist" caption="Real quotes, factor scores from Admin refresh" />
 
-      <div className="mb-4">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Symbol or company name (e.g. AAPL or Apple)"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setAddError(null);
-            }}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            disabled={adding}
-          />
-          <Button onClick={handleAdd} disabled={adding}>
-            Add
-          </Button>
+      {/* Watchlist tabs */}
+      {availableTabs.length > 1 && (
+        <div className="mb-4 flex gap-2 border-b border-hairline">
+          {availableTabs.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab
+                  ? "border-b-2 border-accent text-accent"
+                  : "text-muted hover:text-ink"
+              }`}
+            >
+              {formatTabName(tab)}
+            </button>
+          ))}
         </div>
-        {addError && <div className="mt-1 text-sm text-loss">{addError}</div>}
-      </div>
+      )}
+
+      {/* Add to watchlist — only on main watchlist */}
+      {activeTab === "user" && (
+        <div className="mb-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Symbol or company name (e.g. AAPL or Apple)"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setAddError(null);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              disabled={adding}
+            />
+            <Button onClick={handleAdd} disabled={adding}>
+              Add
+            </Button>
+          </div>
+          {addError && <div className="mt-1 text-sm text-loss">{addError}</div>}
+        </div>
+      )}
+
+      {/* Portfolio watchlist notice */}
+      {activeTab !== "user" && (
+        <div className="mb-4 p-3 bg-surface rounded text-sm text-muted">
+          Portfolio holdings are auto-populated from {formatTabName(activeTab)}. You can edit notes and target prices. To add investments, edit them in the Main Watchlist.
+        </div>
+      )}
 
       <Card>
         {loading ? (

@@ -15,6 +15,7 @@ import {
   refreshAllAccountHoldings,
   loadExtractedHoldings,
   getAccountsList,
+  cleanupDuplicateAccounts,
 } from "@/app/settings/actions";
 
 interface SetupStatus {
@@ -268,6 +269,28 @@ export function AdminPanel() {
           {results.loadStatementHoldings && (
             <div className="text-xs text-muted pl-4 max-h-20 overflow-y-auto">
               {results.loadStatementHoldings}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Cleanup Duplicates */}
+      <div className="border border-hairline rounded-lg overflow-hidden">
+        <div className="px-4 py-3 bg-surface border-b border-hairline space-y-2">
+          <p className="font-semibold text-sm text-ink">🧹 Cleanup</p>
+          <p className="text-xs text-muted">Remove duplicate accounts that may have been created during setup</p>
+        </div>
+        <div className="p-4">
+          <button
+            onClick={() => handleAction("cleanupDuplicates", cleanupDuplicateAccounts)}
+            disabled={loading === "cleanupDuplicates"}
+            className="w-full px-4 py-2 text-sm bg-orange-600 text-white rounded hover:opacity-90 disabled:opacity-50 text-left"
+          >
+            {loading === "cleanupDuplicates" ? "Cleaning..." : "Remove Duplicate Accounts"}
+          </button>
+          {results.cleanupDuplicates && (
+            <div className="text-xs text-muted pl-4 mt-2 max-h-20 overflow-y-auto">
+              {results.cleanupDuplicates}
             </div>
           )}
         </div>

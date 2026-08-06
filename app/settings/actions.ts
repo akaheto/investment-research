@@ -493,3 +493,62 @@ export async function createPortfolioWatchlists() {
     return { ok: false, message: `Failed: ${String(error)}` };
   }
 }
+
+/**
+ * Clean up duplicate accounts
+ * Keeps the first occurrence of each account name, removes duplicates
+ */
+export async function cleanupDuplicateAccounts() {
+  try {
+    console.log("🧹 Cleaning up duplicate accounts...");
+
+    const { fundHoldings: fundHoldingsTable } = await import("@/db/schema");
+    const allAccounts = await db.select().from(accounts).orderBy(accounts.id);
+
+    // Find duplicates by name
+    const seen = new Map<string, number[]>();
+    for (const account of allAccounts) {
+      if (!seen.has(account.name)) {
+        seen.set(account.name, []);
+      }
+      seen.get(account.name)!.push(account.id);
+    }
+
+    let deletedCount = 0;
+    const deleted = [];
+
+    // Delete duplicates (keep first, delete rest)
+    for (const [name, ids] of seen) {
+      if (ids.length > 1) {
+        console.log(`Found ${ids.length} "${name}" accounts (IDs: ${ids.join(", ")}), keeping first, deleting duplicates`);
+
+        // Delete all but the first
+        const toDelete = ids.slice(1);
+        for (const deleteId of toDelete) {
+          // Delete associated holdings first
+          await db.delete(fundHoldingsTable)
+            .where(eq(fundHoldingsTable.accountId, deleteId));
+
+          // Delete the account
+          await db.delete(accounts).where(eq(accounts.id, deleteId));
+          deleted.push(deleteId);
+          deletedCount++;
+        }
+      }
+    }
+
+    if (deletedCount === 0) {
+      return { ok: true, message: "No duplicate accounts found" };
+    }
+
+    return {
+      ok: true,
+      deleted: deletedCount,
+      deletedIds: deleted,
+      message: `✅ Cleaned up ${deletedCount} duplicate account(s). Kept original accounts with IDs: ${Array.from(seen.values()).map(ids => ids[0]).join(", ")}`,
+    };
+  } catch (error) {
+    console.error("Failed to cleanup duplicates:", error);
+    return { ok: false, error: `Cleanup failed: ${String(error)}` };
+  }
+}

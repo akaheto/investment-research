@@ -6,6 +6,29 @@ All notable changes to this project. One entry per deliverable.
 
 ### 2026-08-06
 
+- **Feature** — Dashboard refresh-status badge (Epic I2)
+  New getLastRefreshSummary() action queries auditEvents for latest data_refresh
+  timestamp. Dashboard header displays "Last updated 2h ago" + next cron time
+  (3:00 AM UTC). Relative time formatter (formatRelativeTime) shows "just now",
+  "5m ago", "2h ago", "3d ago", or full date if >7 days.
+
+- **Feature** — Responsive polish: stat stacking, table scroll affordance, touch targets (Epic H3)
+  Markets page macro regime stats stack to 1 column below 640px (sm breakpoint).
+  Table wrappers (Watchlist, Screener) show trailing-edge fade on mobile to signal
+  horizontal scroll. Button component gains size="touch" variant (44px height,
+  44×44px touch target minimum per WCAG 2.5.5 and Apple HIG).
+
+- **Feature** — Mobile responsive nav: off-canvas drawer + top app bar (Epic H1–H2)
+  New components: components/nav-icons.tsx (shared icon set), mobile-nav-bar.tsx
+  (48px header with hamburger + wordmark + theme toggle), nav-drawer.tsx (260px
+  off-canvas drawer with 44px touch-target rows). Sidebar hidden below 1024px
+  breakpoint, drawer slides in from left over dim backdrop (closes on
+  link-click/Escape/backdrop-click, body-scroll-lock while open). Page padding
+  reduced to 16px below lg to reclaim space on phones. All 11 nav items
+  + active-state indicator (accent bar) carried over from desktop. Test build
+  clean: npm run lint OK, 56/58 tests passing (2 pre-existing skips).
+  Deployed to https://investment-research-weld.vercel.app.
+
 - **Planning** — Mobile responsive redesign + UX enhancement backlog planned
   (Opus, per the project's model-tiering convention — implementation queued
   for a lighter model). User reported the live mobile view was unusable (4

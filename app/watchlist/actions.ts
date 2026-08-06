@@ -31,10 +31,11 @@ export interface WatchlistQuote {
 /**
  * Get watchlist with latest quotes.
  * Returns items with prices if available; items without prices shown with placeholder values.
+ * @param watchlistType - "user" (main watchlist) or "portfolio_*" (portfolio-based). Defaults to "user".
  */
-export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
+export async function getWatchlistWithQuotes(watchlistType: string = "user"): Promise<WatchlistQuote[]> {
   try {
-    console.log("📋 Loading watchlist with quotes...");
+    console.log(`📋 Loading watchlist with quotes... (type: ${watchlistType})`);
 
     const watchlistItems = await db
       .select({
@@ -46,7 +47,8 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
         targetPrice: watchlist.targetPrice,
       })
       .from(watchlist)
-      .innerJoin(instruments, eq(watchlist.instrumentId, instruments.id));
+      .innerJoin(instruments, eq(watchlist.instrumentId, instruments.id))
+      .where(eq(watchlist.watchlistType, watchlistType));
 
     console.log(`✓ Found ${watchlistItems.length} watchlist items`);
 
@@ -267,5 +269,28 @@ export async function updateWatchlistTarget(instrumentId: string, targetPrice: n
   } catch (error) {
     console.error("Error updating watchlist target:", error);
     throw error;
+  }
+}
+
+/**
+ * Get all available watchlist types with counts
+ */
+export async function getWatchlistTypes() {
+  try {
+    const types = await db
+      .selectDistinct({ type: watchlist.watchlistType })
+      .from(watchlist)
+      .orderBy(watchlist.watchlistType);
+
+    // Always include "user" (main watchlist) even if empty
+    const typeList = types.map((t) => t.type);
+    if (!typeList.includes("user")) {
+      typeList.unshift("user");
+    }
+
+    return { ok: true, types: typeList };
+  } catch (error) {
+    console.error("Error getting watchlist types:", error);
+    return { ok: false, types: ["user"] };
   }
 }

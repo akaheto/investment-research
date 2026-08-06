@@ -3,6 +3,7 @@
 import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
 import { Sparkline } from "@/components/sparkline";
+import { ColumnPicker, type ColumnKey } from "@/components/column-picker";
 import { useState, useEffect } from "react";
 import { getScreenerResults } from "./actions";
 import type { ScreenerResult } from "./actions";
@@ -14,6 +15,24 @@ export default function ScreenerPage() {
   const [sortBy, setSortBy] = useState<"compositeScore" | "valuation" | "growth" | "quality" | "momentum">(
     "compositeScore"
   );
+  const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>(() => {
+    if (typeof window === "undefined") {
+      return { valuation: true, growth: true, quality: true, momentum: true };
+    }
+    const saved = localStorage.getItem("screener_visible_columns");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return { valuation: true, growth: true, quality: true, momentum: true };
+      }
+    }
+    return { valuation: true, growth: true, quality: true, momentum: true };
+  });
+
+  useEffect(() => {
+    localStorage.setItem("screener_visible_columns", JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
 
   useEffect(() => {
     async function load() {
@@ -34,7 +53,11 @@ export default function ScreenerPage() {
 
   return (
     <>
-      <PageHeader title="Screener" caption="Rank instruments by factor scores and presets" />
+      <PageHeader
+        title="Screener"
+        caption="Rank instruments by factor scores and presets"
+        actions={<ColumnPicker visible={visibleColumns} onChange={setVisibleColumns} />}
+      />
 
       <div className="mb-4 flex gap-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -72,10 +95,18 @@ export default function ScreenerPage() {
                   <th className="px-4 py-2 font-semibold text-ink-2">Symbol</th>
                   <th className="px-4 py-2 text-center font-semibold text-ink-2 text-xs">Trend</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Score</th>
-                  <th className="px-4 py-2 text-right font-semibold text-ink-2">Valuation</th>
-                  <th className="px-4 py-2 text-right font-semibold text-ink-2">Growth</th>
-                  <th className="px-4 py-2 text-right font-semibold text-ink-2">Quality</th>
-                  <th className="px-4 py-2 text-right font-semibold text-ink-2">Momentum</th>
+                  {visibleColumns.valuation && (
+                    <th className="px-4 py-2 text-right font-semibold text-ink-2">Valuation</th>
+                  )}
+                  {visibleColumns.growth && (
+                    <th className="px-4 py-2 text-right font-semibold text-ink-2">Growth</th>
+                  )}
+                  {visibleColumns.quality && (
+                    <th className="px-4 py-2 text-right font-semibold text-ink-2">Quality</th>
+                  )}
+                  {visibleColumns.momentum && (
+                    <th className="px-4 py-2 text-right font-semibold text-ink-2">Momentum</th>
+                  )}
                   <th className="px-4 py-2 text-center font-semibold text-ink-2">Conf</th>
                 </tr>
               </thead>
@@ -95,10 +126,18 @@ export default function ScreenerPage() {
                         {Math.round(row.compositeScore)}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-right text-ink">{Math.round(row.valuation)}</td>
-                    <td className="px-4 py-2 text-right text-ink">{Math.round(row.growth)}</td>
-                    <td className="px-4 py-2 text-right text-ink">{Math.round(row.quality)}</td>
-                    <td className="px-4 py-2 text-right text-ink">{Math.round(row.momentum)}</td>
+                    {visibleColumns.valuation && (
+                      <td className="px-4 py-2 text-right text-ink">{Math.round(row.valuation)}</td>
+                    )}
+                    {visibleColumns.growth && (
+                      <td className="px-4 py-2 text-right text-ink">{Math.round(row.growth)}</td>
+                    )}
+                    {visibleColumns.quality && (
+                      <td className="px-4 py-2 text-right text-ink">{Math.round(row.quality)}</td>
+                    )}
+                    {visibleColumns.momentum && (
+                      <td className="px-4 py-2 text-right text-ink">{Math.round(row.momentum)}</td>
+                    )}
                     <td className="px-4 py-2 text-center text-xs text-muted">
                       {row.confidence === "high" ? "✓" : "?"}
                     </td>

@@ -200,9 +200,42 @@ export async function getSetupStatus() {
  * Groups by institution and creates one watchlist per institution
  * Prevents duplicates by checking existing entries first
  */
+/**
+ * Migrate watchlist table: add watchlist_type column if missing
+ */
+async function ensureWatchlistTypeColumn() {
+  try {
+    const client = getRawClient();
+    // Add watchlist_type column if it doesn't exist (SQLite doesn't support IF NOT EXISTS for columns)
+    const result = await client.execute(
+      "PRAGMA table_info(watchlist)"
+    );
+
+    const rows = result.rows as Record<string, unknown>[];
+    const hasWatchlistType = rows.some((row) => row.name === "watchlist_type");
+
+    if (!hasWatchlistType) {
+      console.log("⚠️ Adding missing watchlist_type column...");
+      await client.execute(
+        "ALTER TABLE watchlist ADD COLUMN watchlist_type TEXT NOT NULL DEFAULT 'user'"
+      );
+      console.log("✅ Successfully added watchlist_type column");
+    } else {
+      console.log("✅ watchlist_type column already exists");
+    }
+  } catch (error) {
+    console.error("❌ Failed to ensure watchlist_type column:", error);
+    throw error;
+  }
+}
+
 export async function createPortfolioWatchlists() {
   try {
+    // Ensure the watchlist_type column exists in the database
+    await ensureWatchlistTypeColumn();
+
     const allAccounts = await db.select().from(accounts);
+    console.log(`📋 createPortfolioWatchlists: Found ${allAccounts.length} accounts`);
 
     if (allAccounts.length === 0) {
       return { ok: false, message: "No accounts found" };
@@ -218,33 +251,49 @@ export async function createPortfolioWatchlists() {
       },
       {} as Record<string, number[]>
     );
+    console.log(`📋 Grouped into institutions:`, accountsByInstitution);
 
     let totalAdded = 0;
     let skippedDuplicates = 0;
 
     // For each institution, create watchlist from holdings
     for (const [institution, accountIds] of Object.entries(accountsByInstitution)) {
+      console.log(`📋 Processing institution: ${institution} with accounts: ${accountIds}`);
+
       // Get all holdings for these accounts
       const accountHoldings = await db
         .select({ planFundId: holdings.planFundId })
         .from(holdings)
         .where(inArray(holdings.accountId, accountIds));
 
-      if (accountHoldings.length === 0) continue;
+      console.log(`📋 Found ${accountHoldings.length} holdings for ${institution}`);
+
+      if (accountHoldings.length === 0) {
+        console.log(`⚠️ Skipping ${institution}: no holdings found`);
+        continue;
+      }
 
       // Get unique planFundIds and map to instrumentIds
       const planFundIds = [...new Set(accountHoldings.map(h => h.planFundId))];
+      console.log(`📋 Unique planFundIds: ${planFundIds.length}`);
+
       const mappings = await db
         .select({ planFundId: proxyMap.planFundId, instrumentId: proxyMap.instrumentId })
         .from(proxyMap)
         .where(inArray(proxyMap.planFundId, planFundIds));
 
+      console.log(`📋 Found ${mappings.length} proxyMap entries`);
+
       // Get existing watchlist entries for this portfolio
       const watchlistType = `portfolio_${institution.toLowerCase().replace(/\s+/g, "_")}`;
+      console.log(`📋 Watchlist type: ${watchlistType}`);
+
       const existingEntries = await db
         .select({ instrumentId: watchlist.instrumentId })
         .from(watchlist)
         .where(eq(watchlist.watchlistType, watchlistType));
+
+      console.log(`📋 Found ${existingEntries.length} existing entries for ${watchlistType}`);
       const existingIds = new Set(existingEntries.map(e => e.instrumentId));
 
       // Add only new entries (skip if already exists)
@@ -255,6 +304,8 @@ export async function createPortfolioWatchlists() {
           watchlistType,
           addedAt: new Date().toISOString(),
         }));
+
+      console.log(`📋 Adding ${newEntries.length} new entries`);
 
       if (newEntries.length > 0) {
         await db.insert(watchlist).values(newEntries);
@@ -268,8 +319,10 @@ export async function createPortfolioWatchlists() {
       ? `Created portfolio watchlists. Added ${totalAdded} investments (${skippedDuplicates} duplicates skipped).`
       : `Created portfolio watchlists. Added ${totalAdded} investments total.`;
 
+    console.log(`✅ Portfolio watchlist creation complete: ${message}`);
     return { ok: true, message };
   } catch (error) {
+    console.error(`❌ createPortfolioWatchlists failed:`, error);
     return { ok: false, message: `Failed: ${String(error)}` };
   }
 }

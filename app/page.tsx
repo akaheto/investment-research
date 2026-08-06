@@ -3,6 +3,8 @@ import { PageHeader } from "@/components/page-header";
 import { getMarketIndices } from "./markets/actions";
 import { getWatchlistWithQuotes } from "./watchlist/actions";
 import { getLatestNews } from "./news/actions";
+import { getLastRefreshSummary } from "@/lib/audit/tracker";
+import { formatRelativeTime } from "@/lib/format-time";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -12,21 +14,38 @@ export default async function DashboardPage() {
   let indices: Awaited<ReturnType<typeof getMarketIndices>> = [];
   let watchlist: Awaited<ReturnType<typeof getWatchlistWithQuotes>> = [];
   let news: Awaited<ReturnType<typeof getLatestNews>> = { ok: false, items: [] };
+  let lastRefreshAt: string | null = null;
 
   try {
-    const results = await Promise.all([getMarketIndices(), getWatchlistWithQuotes(), getLatestNews(5)]);
+    const results = await Promise.all([
+      getMarketIndices(),
+      getWatchlistWithQuotes(),
+      getLatestNews(5),
+      getLastRefreshSummary(),
+    ]);
     indices = results[0];
     watchlist = results[1];
     news = results[2];
+    lastRefreshAt = results[3].lastRefreshAt;
   } catch (error) {
     console.error("❌ Failed to load dashboard data:", error);
   }
 
   const headlines = news.ok ? news.items.slice(0, 5) : [];
+  const refreshStatusText = lastRefreshAt ? `Last updated ${formatRelativeTime(lastRefreshAt)}` : "No data yet";
 
   return (
     <>
-      <PageHeader title="Dashboard" caption="Market overview, your accounts, and what changed" />
+      <PageHeader
+        title="Dashboard"
+        caption="Market overview, your accounts, and what changed"
+        actions={
+          <div className="text-right">
+            <div className="text-xs text-muted">{refreshStatusText}</div>
+            <div className="text-xs text-muted mt-0.5">Next: 3:00 AM UTC</div>
+          </div>
+        }
+      />
       <div className="grid grid-cols-12 gap-4">
         <Card title="Markets" className="col-span-12 lg:col-span-8">
           {indices.length > 0 ? (

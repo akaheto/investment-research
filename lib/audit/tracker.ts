@@ -231,3 +231,25 @@ export async function getProviderCallHistory(provider: string, daysBack = 30) {
     return [];
   }
 }
+
+/**
+ * Get last data refresh timestamp for dashboard badge.
+ */
+export async function getLastRefreshSummary() {
+  try {
+    const events = await db
+      .select()
+      .from(auditEvents)
+      .orderBy(desc(auditEvents.timestamp))
+      .limit(1);
+
+    const lastRefresh = events.find((e) => e.eventType === "data_refresh");
+
+    return {
+      lastRefreshAt: lastRefresh?.timestamp ?? null,
+    };
+  } catch (err) {
+    console.error("Failed to get last refresh summary:", err);
+    return { lastRefreshAt: null };
+  }
+}

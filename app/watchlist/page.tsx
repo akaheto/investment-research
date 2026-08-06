@@ -5,6 +5,7 @@ import { Card } from "@/components/card";
 import { Input } from "@/components/input";
 import { PageHeader } from "@/components/page-header";
 import { Sparkline } from "@/components/sparkline";
+import { WatchlistNoteEditor } from "@/components/watchlist-note-editor";
 import { useState, useEffect } from "react";
 import { addToWatchlist, removeFromWatchlist, getWatchlistWithQuotes } from "./actions";
 import type { WatchlistQuote } from "./actions";
@@ -101,6 +102,7 @@ export default function WatchlistPage() {
                   <th className="px-4 py-2 text-right font-semibold text-ink-2 text-xs">Grw</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2 text-xs">Qal</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2 text-xs">Mom</th>
+                  <th className="px-4 py-2 text-center text-xs font-semibold text-ink-2">Notes</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -137,6 +139,13 @@ export default function WatchlistPage() {
                     </td>
                     <td className="px-4 py-2 text-right text-muted text-xs">
                       {item.momentum ? item.momentum.toFixed(0) : "–"}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <WatchlistNoteEditor
+                        instrumentId={item.id.toString()}
+                        note={item.note}
+                        targetPrice={item.targetPrice}
+                      />
                     </td>
                     <td className="px-4 py-2 text-right">
                       <Button

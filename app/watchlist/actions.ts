@@ -24,6 +24,8 @@ export interface WatchlistQuote {
   quality?: number;
   momentum?: number;
   sparkline?: number[];
+  note?: string;
+  targetPrice?: number;
 }
 
 /**
@@ -40,6 +42,8 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
         symbol: instruments.symbol,
         name: instruments.name,
         instrumentId: watchlist.instrumentId,
+        note: watchlist.note,
+        targetPrice: watchlist.targetPrice,
       })
       .from(watchlist)
       .innerJoin(instruments, eq(watchlist.instrumentId, instruments.id));
@@ -123,6 +127,8 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
           quality: scores["quality"],
           momentum: scores["momentum"],
           sparkline,
+          note: item.note || undefined,
+          targetPrice: item.targetPrice || undefined,
         };
       } else {
         return {
@@ -138,6 +144,8 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
           growth: scores["growth"],
           quality: scores["quality"],
           momentum: scores["momentum"],
+          note: item.note || undefined,
+          targetPrice: item.targetPrice || undefined,
         };
       }
     });
@@ -231,5 +239,33 @@ export async function removeFromWatchlist(instrumentId: number) {
   } catch (error) {
     console.error("Error removing from watchlist:", error);
     return { ok: false, error: String(error) };
+  }
+}
+
+/**
+ * Update watchlist note for an instrument.
+ */
+export async function updateWatchlistNote(instrumentId: string, note: string) {
+  try {
+    const id = parseInt(instrumentId, 10);
+    await db.update(watchlist).set({ note: note || null }).where(eq(watchlist.instrumentId, id));
+    return { ok: true };
+  } catch (error) {
+    console.error("Error updating watchlist note:", error);
+    throw error;
+  }
+}
+
+/**
+ * Update target price for an instrument in watchlist.
+ */
+export async function updateWatchlistTarget(instrumentId: string, targetPrice: number | null) {
+  try {
+    const id = parseInt(instrumentId, 10);
+    await db.update(watchlist).set({ targetPrice }).where(eq(watchlist.instrumentId, id));
+    return { ok: true };
+  } catch (error) {
+    console.error("Error updating watchlist target:", error);
+    throw error;
   }
 }

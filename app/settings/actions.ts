@@ -261,12 +261,32 @@ export async function createPortfolioWatchlists() {
       console.log(`📋 Processing institution: ${institution} with accounts: ${accountIds}`);
 
       // Get all holdings for these accounts
+      try {
+        const allHoldings = await db.select().from(holdings);
+        console.log(`📋 Total holdings in DB: ${allHoldings.length}`);
+        const accountHoldings = await db
+          .select({ planFundId: holdings.planFundId })
+          .from(holdings)
+          .where(inArray(holdings.accountId, accountIds));
+
+        console.log(`📋 Found ${accountHoldings.length} holdings for ${institution}`);
+        if (accountHoldings.length === 0) {
+          console.log(`⚠️ Holdings in DB by account:`);
+          const holdingsByAccount = allHoldings.reduce((acc, h) => {
+            if (!acc[h.accountId]) acc[h.accountId] = 0;
+            acc[h.accountId]++;
+            return acc;
+          }, {} as Record<number, number>);
+          console.log(holdingsByAccount);
+        }
+      } catch (e) {
+        console.error(`❌ Error querying holdings:`, e);
+        throw e;
+      }
       const accountHoldings = await db
         .select({ planFundId: holdings.planFundId })
         .from(holdings)
         .where(inArray(holdings.accountId, accountIds));
-
-      console.log(`📋 Found ${accountHoldings.length} holdings for ${institution}`);
 
       if (accountHoldings.length === 0) {
         console.log(`⚠️ Skipping ${institution}: no holdings found`);

@@ -88,7 +88,7 @@ export default function WatchlistPage() {
             No instruments in watchlist. Add one above or go to /admin/refresh to seed test data.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto [mask-image:linear-gradient(to_right,black_92%,transparent)] lg:[mask-image:none]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-hairline text-left">

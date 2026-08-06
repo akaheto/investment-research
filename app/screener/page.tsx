@@ -65,7 +65,7 @@ export default function ScreenerPage() {
             factor scores.
           </EmptyState>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto [mask-image:linear-gradient(to_right,black_92%,transparent)] lg:[mask-image:none]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-hairline text-left">

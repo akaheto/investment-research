@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "touch";
   children: ReactNode;
 }
 
@@ -17,6 +17,7 @@ export function Button({ variant = "primary", size = "md", className = "", ...pr
     sm: "px-2.5 h-7 text-xs",
     md: "px-3 h-8 text-sm",
     lg: "px-4 h-10 text-base",
+    touch: "px-4 h-11 text-sm",
   };
   return (
     <button className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`} {...props} />

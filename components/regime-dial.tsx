@@ -59,7 +59,7 @@ export function RegimeDial({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-2">
         <div className="border-t border-hairline pt-3">
           <div className="text-xs text-muted mb-1">Yield Curve</div>
           <div className="text-sm font-semibold text-ink">{yieldCurveSlope}bps</div>

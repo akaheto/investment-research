@@ -119,6 +119,8 @@ export const accounts = sqliteTable("accounts", {
   /** '401k' | 'ira' | 'taxable' */
   taxType: text("tax_type").notNull(),
   createdAt: text("created_at").notNull(),
+  /** IBKR account ID, e.g. "U1234567" — null for manual accounts */
+  externalId: text("external_id"),
 });
 
 export const planMenu = sqliteTable(
@@ -170,6 +172,46 @@ export const assessments = sqliteTable("assessments", {
   citedEventIdsCsv: text("cited_event_ids_csv"),
   modelId: text("model_id"),
 });
+
+// ── Brokerage (IBKR positions and account summaries) ────────────────────────
+
+export const brokeragePositions = sqliteTable(
+  "brokerage_positions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    accountId: integer("account_id").notNull().references(() => accounts.id),
+    instrumentId: integer("instrument_id").references(() => instruments.id), // null for cash/unmapped
+    symbol: text("symbol").notNull(),
+    description: text("description"),
+    /** 'stock' | 'etf' | 'option' | 'cash' | 'other' */
+    assetClass: text("asset_class").notNull(),
+    quantity: real("quantity").notNull(),
+    avgCost: real("avg_cost"),
+    marketPrice: real("market_price"),
+    marketValue: real("market_value").notNull(),
+    unrealizedPnl: real("unrealized_pnl"),
+    currency: text("currency").notNull().default("USD"),
+    asOf: text("as_of").notNull(), // YYYY-MM-DD
+    source: text("source").notNull().default("ibkr_api"),
+  },
+  (t) => [uniqueIndex("uq_brokerage_position_snapshot").on(t.accountId, t.symbol, t.asOf)],
+);
+
+export const brokerageAccountSummary = sqliteTable(
+  "brokerage_account_summary",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    accountId: integer("account_id").notNull().references(() => accounts.id),
+    asOf: text("as_of").notNull(), // YYYY-MM-DD
+    netLiquidation: real("net_liquidation").notNull(),
+    cashBalance: real("cash_balance"),
+    totalUnrealizedPnl: real("total_unrealized_pnl"),
+    buyingPower: real("buying_power"),
+    currency: text("currency").notNull().default("USD"),
+    source: text("source").notNull().default("ibkr_api"),
+  },
+  (t) => [uniqueIndex("uq_brokerage_summary_snapshot").on(t.accountId, t.asOf)],
+);
 
 // ── Admin Audit Logging ─────────────────────────────────────────────────────
 

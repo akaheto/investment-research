@@ -5,6 +5,7 @@
 
 import { db } from "@/db/client";
 import { apiCalls, fileImports, auditEvents } from "@/db/schema";
+import { desc } from "drizzle-orm";
 
 export interface ApiCallLog {
   provider: "fred" | "newsapi" | "finnhub" | "alphavantage" | "anthropic" | "cache";
@@ -31,6 +32,15 @@ export interface AuditEventLog {
   status?: "success" | "failed";
   details?: Record<string, unknown>;
   userId?: string;
+}
+
+export interface ApiConnectionStatus {
+  provider: string;
+  configured: boolean;
+  lastCallAt: string | null;
+  lastStatus: "success" | "error" | "unknown";
+  lastError?: string;
+  recordsReturned?: number;
 }
 
 /**
@@ -158,5 +168,66 @@ export async function getRecentEvents(limit = 50) {
   } catch (err) {
     console.error("Failed to get events:", err);
     return { ok: false, error: String(err), events: [] };
+  }
+}
+
+/**
+ * Get API connection status for all known providers.
+ * Shows configured status, last call time, and whether it succeeded.
+ */
+export async function getApiConnectionsStatus(): Promise<ApiConnectionStatus[]> {
+  const providers = [
+    { name: "yahoo", envVar: null }, // free API, no key required
+    { name: "coingecko", envVar: null }, // free API, no key required
+    { name: "fred", envVar: "FRED_API_KEY" },
+    { name: "finnhub", envVar: "FINNHUB_API_KEY" },
+    { name: "alphavantage", envVar: "ALPHAVANTAGE_API_KEY" },
+    { name: "newsapi", envVar: "NEWS_API_KEY" },
+    { name: "ibkr", envVar: "IBKR_GATEWAY_URL" }, // Has multiple env vars, just check one
+    { name: "anthropic", envVar: "ANTHROPIC_API_KEY" },
+  ];
+
+  try {
+    const allCalls = await db.select().from(apiCalls).orderBy(desc(apiCalls.timestamp));
+
+    const status: ApiConnectionStatus[] = providers.map((provider) => {
+      const configured = provider.envVar ? Boolean(process.env[provider.envVar]) : true; // free APIs are "configured"
+      const lastCall = allCalls.find((call) => call.provider === provider.name);
+
+      return {
+        provider: provider.name,
+        configured,
+        lastCallAt: lastCall?.timestamp || null,
+        lastStatus: lastCall ? (lastCall.error ? "error" : "success") : "unknown",
+        lastError: lastCall?.error || undefined,
+        recordsReturned: lastCall?.recordsReturned || undefined,
+      };
+    });
+
+    return status;
+  } catch (err) {
+    console.error("Failed to get API connection status:", err);
+    return [];
+  }
+}
+
+/**
+ * Get API call history for a specific provider (last 30 days).
+ */
+export async function getProviderCallHistory(provider: string, daysBack = 30) {
+  const cutoff = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const calls = await db
+      .select()
+      .from(apiCalls)
+      .orderBy(desc(apiCalls.timestamp));
+
+    // Filter in JS to avoid complex SQL
+    const filtered = calls.filter((c) => c.timestamp >= cutoff && c.provider === provider);
+    return filtered;
+  } catch (err) {
+    console.error(`Failed to get call history for ${provider}:`, err);
+    return [];
   }
 }

@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db/client";
-import { instruments, watchlist, factorScores } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { instruments, watchlist, factorScores, pricesDaily } from "@/db/schema";
+import { eq, desc, inArray } from "drizzle-orm";
 import { fetchMetricsForSymbol } from "@/lib/signals/data-fetcher";
 import {
   computeValuationFactor,
@@ -23,6 +23,7 @@ export interface ScreenerResult {
   quality: number;
   momentum: number;
   confidence: string;
+  sparkline?: number[];
 }
 
 /**
@@ -118,6 +119,30 @@ export async function getScreenerResults(presetName: string = "balanced"): Promi
     .from(watchlist)
     .innerJoin(instruments, eq(watchlist.instrumentId, instruments.id));
 
+  const instrumentIds = watchlistItems.map((item) => item.id);
+
+  // Batch load latest 30 prices per instrument for sparklines
+  const allPrices = await db
+    .select({
+      instrumentId: pricesDaily.instrumentId,
+      close: pricesDaily.close,
+      date: pricesDaily.date,
+    })
+    .from(pricesDaily)
+    .where(inArray(pricesDaily.instrumentId, instrumentIds))
+    .orderBy(desc(pricesDaily.date));
+
+  // Group by instrument and keep latest 30 prices
+  const pricesByInstrument: Record<number, typeof allPrices> = {};
+  for (const price of allPrices) {
+    if (!pricesByInstrument[price.instrumentId]) {
+      pricesByInstrument[price.instrumentId] = [];
+    }
+    if (pricesByInstrument[price.instrumentId].length < 30) {
+      pricesByInstrument[price.instrumentId].push(price);
+    }
+  }
+
   const results: ScreenerResult[] = [];
 
   for (const item of watchlistItems) {
@@ -150,6 +175,10 @@ export async function getScreenerResults(presetName: string = "balanced"): Promi
     const compositeScore =
       factorValues.reduce((a, b) => a + b, 0) / factorValues.length;
 
+    // Build sparkline if we have multiple prices
+    const prices = pricesByInstrument[item.id] || [];
+    const sparkline = prices.length > 1 ? prices.map((p) => p.close).reverse() : undefined;
+
     results.push({
       id: item.id,
       symbol: item.symbol,
@@ -161,6 +190,7 @@ export async function getScreenerResults(presetName: string = "balanced"): Promi
       quality: scoresByFactor["quality"] ?? 50,
       momentum: scoresByFactor["momentum"] ?? 50,
       confidence: scores.length > 0 ? "high" : "low",
+      sparkline,
     });
   }
 

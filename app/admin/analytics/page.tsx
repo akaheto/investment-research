@@ -3,9 +3,10 @@ import { PageHeader } from "@/components/page-header";
 import { RefreshButton } from "../refresh-button";
 import { MigrateButton } from "../migrate-button";
 import { DeleteInstrumentButton } from "../delete-instrument-button";
-import { getApiStats, getRecentImports, getRecentEvents } from "@/lib/audit/tracker";
+import { getApiStats, getRecentImports, getRecentEvents, getApiConnectionsStatus } from "@/lib/audit/tracker";
 import { getCacheStats } from "@/lib/cache/provider-cache";
 import { formatTimeEST } from "@/lib/format-time";
+import { ApiConnectionsStatus } from "@/components/api-connections-status";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function AdminAnalyticsPage() {
   let imports: Awaited<ReturnType<typeof getRecentImports>> = { ok: false, imports: [] };
   let events: Awaited<ReturnType<typeof getRecentEvents>> = { ok: false, events: [] };
   let cacheStats: Awaited<ReturnType<typeof getCacheStats>> = { totalEntries: 0, fresh: 0, stale: 0, byType: {} };
+  let connectionStatus: Awaited<ReturnType<typeof getApiConnectionsStatus>> = [];
 
   try {
     const results = await Promise.all([
@@ -28,11 +30,13 @@ export default async function AdminAnalyticsPage() {
       getRecentImports(20),
       getRecentEvents(20),
       getCacheStats(),
+      getApiConnectionsStatus(),
     ]);
     apiStats = results[0];
     imports = results[1];
     events = results[2];
     cacheStats = results[3];
+    connectionStatus = results[4];
   } catch (error) {
     console.error("❌ Failed to load admin analytics:", error);
   }
@@ -202,6 +206,15 @@ export default async function AdminAnalyticsPage() {
             </div>
           ) : (
             <EmptyState>No events yet</EmptyState>
+          )}
+        </Card>
+
+        {/* API Connections Status */}
+        <Card title="API Connections" className="col-span-12">
+          {connectionStatus.length > 0 ? (
+            <ApiConnectionsStatus data={connectionStatus} />
+          ) : (
+            <EmptyState>No connection data available</EmptyState>
           )}
         </Card>
       </div>

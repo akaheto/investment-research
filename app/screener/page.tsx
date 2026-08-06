@@ -2,6 +2,7 @@
 
 import { Card, EmptyState } from "@/components/card";
 import { PageHeader } from "@/components/page-header";
+import { Sparkline } from "@/components/sparkline";
 import { useState, useEffect } from "react";
 import { getScreenerResults } from "./actions";
 import type { ScreenerResult } from "./actions";
@@ -69,6 +70,7 @@ export default function ScreenerPage() {
               <thead>
                 <tr className="border-b border-hairline text-left">
                   <th className="px-4 py-2 font-semibold text-ink-2">Symbol</th>
+                  <th className="px-4 py-2 text-center font-semibold text-ink-2 text-xs">Trend</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Score</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Valuation</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Growth</th>
@@ -84,6 +86,9 @@ export default function ScreenerPage() {
                       <Link href={`/instrument/${row.symbol}`} className="hover:underline">
                         {row.symbol}
                       </Link>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <Sparkline data={row.sparkline} />
                     </td>
                     <td className="px-4 py-2 text-right">
                       <span className="inline-block w-12 bg-gradient-to-r from-loss to-gain px-2 py-1 rounded text-xs font-semibold text-white">

@@ -62,6 +62,40 @@ export interface FundamentalsProvider {
   getSentiment(symbol: string): Promise<unknown>;
 }
 
+export interface BrokerageAccount {
+  externalId: string;
+  title: string;
+  type: string;
+  currency: string;
+}
+
+export interface BrokeragePosition {
+  symbol: string;
+  description: string;
+  assetClass: string;
+  quantity: number;
+  avgCost: number | null;
+  marketPrice: number | null;
+  marketValue: number;
+  unrealizedPnl: number | null;
+  currency: string;
+}
+
+export interface BrokerageAccountSummary {
+  netLiquidation: number;
+  cashBalance: number | null;
+  totalUnrealizedPnl: number | null;
+  buyingPower: number | null;
+  currency: string;
+}
+
+export interface BrokerageProvider {
+  readonly name: string;
+  getAccounts(): Promise<BrokerageAccount[]>;
+  getPositions(externalAccountId: string): Promise<BrokeragePosition[]>;
+  getAccountSummary(externalAccountId: string): Promise<BrokerageAccountSummary>;
+}
+
 /** Uniform error wrapper so callers can handle any provider identically. */
 export class ProviderError extends Error {
   readonly provider: string;

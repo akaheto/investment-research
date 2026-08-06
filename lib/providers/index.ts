@@ -5,17 +5,23 @@
  * Example: EQUITY_PROVIDER="fmp|yahoo" tries FMP first, falls back to Yahoo.
  * Providers are automatically wrapped with caching (quotes 15min, fundamentals 24h).
  */
-import { type EquityProvider, type FundamentalsProvider, ProviderError } from "./types";
+import { type EquityProvider, type FundamentalsProvider, type BrokerageProvider, ProviderError } from "./types";
 import { YahooEquityProvider } from "./yahoo";
 import { CoinGeckoCryptoProvider } from "./coingecko";
 import { FredMacroProvider, type MacroProvider } from "./fred";
 import { FinnhubProvider } from "./finnhub";
 import { alphaVantageProvider } from "./alphavantage";
+import { IBKRBrokerageProvider } from "./ibkr";
 import { withCachedQuotes, withCachedFundamentals } from "@/lib/cache/cached-providers";
 
 const equityProviders: Record<string, () => EquityProvider> = {
   yahoo: () => new YahooEquityProvider(),
   // future: fmp, polygon, tiingo, alpaca — added here, selected by env only
+};
+
+const brokerageProviders: Record<string, () => BrokerageProvider> = {
+  ibkr: () => new IBKRBrokerageProvider(),
+  // future: fidelity, charles-schwab, etc.
 };
 
 const cryptoProviders: Record<string, () => EquityProvider> = {
@@ -91,6 +97,20 @@ export function getFundamentalsProvider(): FundamentalsProvider {
   }
   throw new ProviderError(
     `No known FUNDAMENTALS_PROVIDER in "${list.join("|")}" — known: ${Object.keys(fundamentalsProviders).join(", ")}`,
+    { provider: list[0] },
+  );
+}
+
+export function getBrokerageProvider(): BrokerageProvider {
+  const list = (process.env.BROKERAGE_PROVIDER ?? "ibkr").split("|");
+  for (const key of list) {
+    const factory = brokerageProviders[key.trim()];
+    if (factory) {
+      return factory();
+    }
+  }
+  throw new ProviderError(
+    `No known BROKERAGE_PROVIDER in "${list.join("|")}" — known: ${Object.keys(brokerageProviders).join(", ")}`,
     { provider: list[0] },
   );
 }

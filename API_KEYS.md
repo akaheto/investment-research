@@ -53,6 +53,17 @@ Add these environment variables to Vercel for full financial + political data in
   vercel env add ANTHROPIC_API_KEY
   ```
 
+### 6. Interactive Brokers (Live Account Data)
+- **Prerequisites:** IBKR account with TOTP 2FA enabled (see plan for details)
+- First: Deploy Fly.io container with IBeam + auth shim (instructions in Epic H plan)
+- Once Fly.io is live, add these to Vercel:
+  ```bash
+  vercel env add IBKR_GATEWAY_URL      # e.g., https://my-app.fly.dev/gateway
+  vercel env add IBKR_GATEWAY_SECRET   # Shared Bearer token with Fly.io instance
+  vercel env add BROKERAGE_PROVIDER    # Set to "ibkr"
+  ```
+- Secrets (username, password, TOTP) stored **only on Fly.io**, never in Vercel
+
 ## Full Setup Command
 
 ```bash
@@ -61,6 +72,9 @@ vercel env add NEWS_API_KEY
 vercel env add FINNHUB_API_KEY
 vercel env add ALPHAVANTAGE_API_KEY
 vercel env add ANTHROPIC_API_KEY
+vercel env add IBKR_GATEWAY_URL
+vercel env add IBKR_GATEWAY_SECRET
+vercel env add BROKERAGE_PROVIDER
 ```
 
 Then redeploy:
@@ -77,4 +91,5 @@ vercel deploy --prod
 | Finnhub | ✅ | 60 req/min |
 | Alpha Vantage | ✅ | 5 req/min |
 | Anthropic | Pay-as-you-go | ~$0.01/1000 tokens |
+| IBKR Web API | Your account | 10 req/sec per session |
 

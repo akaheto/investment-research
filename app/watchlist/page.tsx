@@ -4,6 +4,7 @@ import { Button } from "@/components/button";
 import { Card } from "@/components/card";
 import { Input } from "@/components/input";
 import { PageHeader } from "@/components/page-header";
+import { Sparkline } from "@/components/sparkline";
 import { useState, useEffect } from "react";
 import { addToWatchlist, removeFromWatchlist, getWatchlistWithQuotes } from "./actions";
 import type { WatchlistQuote } from "./actions";
@@ -92,6 +93,7 @@ export default function WatchlistPage() {
               <thead>
                 <tr className="border-b border-hairline text-left">
                   <th className="px-4 py-2 font-semibold text-ink-2">Symbol</th>
+                  <th className="px-4 py-2 text-center font-semibold text-ink-2 text-xs">Trend</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Price</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Change %</th>
                   <th className="px-4 py-2 text-right font-semibold text-ink-2">Score</th>
@@ -109,6 +111,9 @@ export default function WatchlistPage() {
                       <Link href={`/instrument/${item.symbol}`} className="hover:underline">
                         {item.symbol}
                       </Link>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <Sparkline data={item.sparkline} />
                     </td>
                     <td className="px-4 py-2 text-right text-ink">${item.price.toFixed(2)}</td>
                     <td

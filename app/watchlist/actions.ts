@@ -23,6 +23,7 @@ export interface WatchlistQuote {
   growth?: number;
   quality?: number;
   momentum?: number;
+  sparkline?: number[];
 }
 
 /**
@@ -64,13 +65,13 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
 
     console.log(`✓ Loaded ${allPrices.length} price records`);
 
-    // Group by instrument and get latest 2 prices per instrument
+    // Group by instrument and get latest 30 prices per instrument (for sparkline + change calc)
     const pricesByInstrument: Record<number, typeof allPrices> = {};
     for (const price of allPrices) {
       if (!pricesByInstrument[price.instrumentId]) {
         pricesByInstrument[price.instrumentId] = [];
       }
-      if (pricesByInstrument[price.instrumentId].length < 2) {
+      if (pricesByInstrument[price.instrumentId].length < 30) {
         pricesByInstrument[price.instrumentId].push(price);
       }
     }
@@ -105,6 +106,8 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
         const previous = prices.length > 1 ? prices[1].close : current;
         const change = current - previous;
         const changePercent = previous > 0 ? (change / previous) * 100 : 0;
+        // Sparkline: ascending order (oldest to newest)
+        const sparkline = prices.length > 1 ? prices.map((p) => p.close).reverse() : undefined;
 
         return {
           id: item.id,
@@ -119,6 +122,7 @@ export async function getWatchlistWithQuotes(): Promise<WatchlistQuote[]> {
           growth: scores["growth"],
           quality: scores["quality"],
           momentum: scores["momentum"],
+          sparkline,
         };
       } else {
         return {

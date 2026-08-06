@@ -119,8 +119,6 @@ export const accounts = sqliteTable("accounts", {
   /** '401k' | 'ira' | 'taxable' */
   taxType: text("tax_type").notNull(),
   createdAt: text("created_at").notNull(),
-  /** IBKR account ID, e.g. "U1234567" — null for manual accounts */
-  externalId: text("external_id"),
 });
 
 export const planMenu = sqliteTable(

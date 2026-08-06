@@ -11,7 +11,7 @@ export async function setupMainAccount() {
   try {
     const client = getRawClient();
     const result = await client.execute(
-      "INSERT INTO accounts (name, institution, tax_type, created_at, external_id) VALUES (?, ?, ?, ?, NULL) RETURNING id, name, institution, tax_type, created_at, external_id",
+      "INSERT INTO accounts (name, institution, tax_type, created_at) VALUES (?, ?, ?, ?) RETURNING id, name, institution, tax_type, created_at",
       ["Main", "Transamerica", "403b", new Date().toISOString()]
     );
 
@@ -41,7 +41,7 @@ export async function setupManagementStaffIRA() {
   try {
     const client = getRawClient();
     const result = await client.execute(
-      "INSERT INTO accounts (name, institution, tax_type, created_at, external_id) VALUES (?, ?, ?, ?, NULL) RETURNING id, name, institution, tax_type, created_at, external_id",
+      "INSERT INTO accounts (name, institution, tax_type, created_at) VALUES (?, ?, ?, ?) RETURNING id, name, institution, tax_type, created_at",
       ["Management staff", "Transamerica", "ira", new Date().toISOString()]
     );
 

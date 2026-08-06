@@ -145,3 +145,27 @@ catches a mistake, or an assumption turns out wrong:
   which hid the problem summary, and the exit code wasn't checked.
   Caught during C1. Going forward: verify lint/test success by EXIT
   CODE (`npm run lint && echo OK`), never by grepping truncated output.
+- **2026-08-06** — The statement-uploader feature was reported "live in
+  production" and "ready to test" when its Vercel build had FAILED on a
+  TypeScript error (`statement-uploader.tsx:74`, `string | undefined` →
+  `string | null`). Vercel keeps serving the last successful build, so
+  the site looked fine while silently running 49-minute-old code — the
+  new UI simply never appeared. Two commits in a row shipped nothing.
+  Root cause: `git push` was treated as "deployed", and no local build
+  was run first. Going forward: (1) run `npm run build` locally BEFORE
+  pushing — `tsc --noEmit` alone caught it here and takes seconds;
+  (2) after pushing, confirm `vercel ls` shows `● Ready`, not `● Error`,
+  before claiming anything is deployed; (3) "the page rendered" is not
+  evidence a new feature shipped — it may be the OLD build rendering.
+- **2026-08-06** — Nearly ran a destructive schema migration holding a
+  backup of the WRONG database. `.env.production` declares
+  `TURSO_DATABASE_URL=` with an EMPTY value, and Vercel sets
+  `DATABASE_URL` instead, so `createDb()` fell through every branch to
+  `file:local.db`. The "production backup" was local dev data (2
+  accounts) while production had 4. Caught by sanity-checking dumped row
+  counts against what the live UI showed. Going forward: before any
+  destructive DB operation, verify the connection target — dump row
+  counts and reconcile them against observed production state. A backup
+  is not a backup until its contents are confirmed to match production.
+  Note `vercel env pull` REDACTS encrypted values (`[SENSITIVE]`), so
+  production credentials must come from the dashboard.

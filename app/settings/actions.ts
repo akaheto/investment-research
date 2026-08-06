@@ -330,13 +330,10 @@ export async function loadExtractedHoldings(extractedHoldingsJson: string, state
 
     console.log(`📋 Loading ${extracted.length} holdings into ${targetAccount.name}...`);
 
-    // Clear existing holdings for this account
-    await db.delete(require("@/db/schema").fundHoldings).where(
-      eq(require("@/db/schema").fundHoldings.accountId, targetAccount.id)
-    );
-
-    // Insert new holdings
     const { funds: fundsTable, fundHoldings: fundHoldingsTable } = await import("@/db/schema");
+
+    // Clear existing holdings for this account
+    await db.delete(fundHoldingsTable).where(eq(fundHoldingsTable.accountId, targetAccount.id));
 
     for (const holding of extracted) {
       // Find fund by name

@@ -71,7 +71,7 @@ export function StatementUploader({
         } else {
           setState({
             loading: false,
-            error: result.error,
+            error: result.error ?? "Could not read holdings from that image.",
             extracted: null,
             warnings: [],
           });

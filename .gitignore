@@ -50,3 +50,6 @@ next-env.d.ts
 Icon?
 !.env.example
 Investment Accounts/
+
+# database backups (contain real account data)
+/backups/

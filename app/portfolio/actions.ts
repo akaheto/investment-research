@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/db/client";
-import { accounts, holdings, planMenu } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { accounts, holdings, planMenu, proxyMap, pricesDaily, instruments } from "@/db/schema";
+import { eq, desc, inArray } from "drizzle-orm";
 
 export interface AccountOverview {
   id: number;
@@ -25,6 +25,7 @@ export interface PortfolioAssessment {
 
 /**
  * Get portfolio overview for all accounts
+ * Calculates real-time values using current prices: value = quantity * currentPrice
  */
 export async function getPortfolioOverview(): Promise<PortfolioAssessment> {
   const allAccounts = await db.select().from(accounts);
@@ -34,18 +35,43 @@ export async function getPortfolioOverview(): Promise<PortfolioAssessment> {
   let totalExpenseBps = 0;
 
   for (const account of allAccounts) {
-    // Get latest holdings for this account
+    // Get all holdings for this account (latest snapshot)
     const holdings_data = await db
       .select()
       .from(holdings)
       .where(eq(holdings.accountId, account.id))
       .orderBy(desc(holdings.asOf))
-      .limit(1);
+      .limit(100); // Get all holdings (across multiple funds)
 
     if (holdings_data.length === 0) continue;
 
-    const latestHoldings = holdings_data[0];
-    const balance = latestHoldings.balance;
+    // Get latest holdings snapshot (all holdings at same asOf date)
+    const latestAsOf = holdings_data[0].asOf;
+    const latestHoldings = holdings_data.filter((h) => h.asOf === latestAsOf);
+
+    // Calculate real-time balance: sum of (quantity * current price)
+    let balance = 0;
+    for (const holding of latestHoldings) {
+      // Get the instrument price via proxyMap
+      const mapping = await db
+        .select()
+        .from(proxyMap)
+        .where(eq(proxyMap.planFundId, holding.planFundId));
+
+      if (mapping.length > 0) {
+        const instrumentId = mapping[0].instrumentId;
+        const latestPrice = await db
+          .select()
+          .from(pricesDaily)
+          .where(eq(pricesDaily.instrumentId, instrumentId))
+          .orderBy(desc(pricesDaily.date))
+          .limit(1);
+
+        if (latestPrice.length > 0 && holding.units) {
+          balance += holding.units * latestPrice[0].close;
+        }
+      }
+    }
 
     // Get fund count
     const funds = await db.select().from(planMenu).where(eq(planMenu.accountId, account.id));
@@ -135,8 +161,19 @@ export async function getPortfolioOverview(): Promise<PortfolioAssessment> {
   };
 }
 
+export interface HoldingWithValue {
+  id: number;
+  planFundId: number;
+  units: number | null;
+  balance: number;
+  realTimeValue: number;
+  asOf: string;
+  source: string;
+}
+
 /**
  * Get account detail with holdings
+ * Includes real-time calculated values: quantity * current price
  */
 export async function getAccountDetail(accountId: number) {
   const account = await db.select().from(accounts).where(eq(accounts.id, accountId));
@@ -150,9 +187,39 @@ export async function getAccountDetail(accountId: number) {
 
   const funds = await db.select().from(planMenu).where(eq(planMenu.accountId, accountId));
 
+  // Calculate real-time values for each holding
+  const holdingsWithValues: HoldingWithValue[] = [];
+  for (const holding of holdings_data) {
+    let realTimeValue = holding.balance; // Fallback to stored balance
+
+    // Get current price via proxyMap
+    const mapping = await db
+      .select()
+      .from(proxyMap)
+      .where(eq(proxyMap.planFundId, holding.planFundId));
+
+    if (mapping.length > 0) {
+      const latestPrice = await db
+        .select()
+        .from(pricesDaily)
+        .where(eq(pricesDaily.instrumentId, mapping[0].instrumentId))
+        .orderBy(desc(pricesDaily.date))
+        .limit(1);
+
+      if (latestPrice.length > 0 && holding.units) {
+        realTimeValue = holding.units * latestPrice[0].close;
+      }
+    }
+
+    holdingsWithValues.push({
+      ...holding,
+      realTimeValue,
+    });
+  }
+
   return {
     account: account[0],
-    holdings: holdings_data,
+    holdings: holdingsWithValues,
     funds,
   };
 }
